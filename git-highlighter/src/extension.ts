@@ -4,6 +4,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { executeCommand, diff, createBookmark } from './gitHelper';
+import { exit } from 'process';
+import { exec } from 'child_process';
 
 let highlights: { [uri: string]: number[] } = {};
 let decorationType = vscode.window.createTextEditorDecorationType({
@@ -73,8 +75,19 @@ export function activate(context: vscode.ExtensionContext) {
             saveHighlights();
         }
     });
+    let testCommandDisposable = vscode.commands.registerCommand('git-highlighter.testDiff', () => {
+        try {
+            vscode.window.showInformationMessage("Diff started");
+            diff(); // This will run the diff function when the test command is run
+            //executeCommand('pwd');
+        } catch (error) {
+            vscode.window.showErrorMessage("Diff failed");
+            exit(1);
+        }
+    });
 
     context.subscriptions.push(disposable);
+    context.subscriptions.push(testCommandDisposable);
 }
 // This method is called when your extension is deactivated
 export function deactivate() {}

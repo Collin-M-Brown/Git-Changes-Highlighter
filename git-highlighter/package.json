@@ -20,6 +20,10 @@
       {
         "command": "git-highlighter.toggleHighlight",
         "title": "git-highlighter: Toggle Highlight"
+      },
+      {
+        "command": "git-highlighter.testDiff",
+        "title": "git-highlighter: Test Git Diff"
       }
     ],
     "configuration": [
