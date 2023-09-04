@@ -15,9 +15,25 @@
     "commands": [
       {
         "command": "git-highlighter.test1",
-        "title": "git-highlighter.test1"
+        "title": "git-highlighter: test1"
+      },
+      {
+        "command": "git-highlighter.toggleHighlight",
+        "title": "git-highlighter: Toggle Highlight"
       }
-    ]
+    ],
+    "configuration": [
+      {
+          "title": "Git Highlighter",
+          "properties": {
+              "git-highlighter.highlightColor": {
+                  "type": "string",
+                  "default": "#2259b27e",
+                  "description": "The color to use for highlights"
+              }
+          }
+      }
+  ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

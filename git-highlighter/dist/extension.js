@@ -7,6 +7,18 @@
 
 module.exports = require("vscode");
 
+/***/ }),
+/* 2 */
+/***/ ((module) => {
+
+module.exports = require("fs");
+
+/***/ }),
+/* 3 */
+/***/ ((module) => {
+
+module.exports = require("path");
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -45,20 +57,65 @@ exports.deactivate = exports.activate = void 0;
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = __webpack_require__(1);
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+const fs = __webpack_require__(2);
+const path = __webpack_require__(3);
+let highlights = {};
+let decorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: 'transparent',
+    isWholeLine: true,
+});
+function saveHighlights() {
+    const filePath = path.join(__dirname, 'highlights.json');
+    fs.writeFileSync(filePath, JSON.stringify(highlights));
+}
+function loadHighlights() {
+    const filePath = path.join(__dirname, 'highlights.json');
+    if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, 'utf-8');
+        highlights = JSON.parse(data);
+    }
+}
+function applyHighlights(document) {
+    const editor = vscode.window.activeTextEditor;
+    if (editor && document === editor.document) {
+        const uri = document.uri.toString();
+        const lines = highlights[uri] || [];
+        const color = vscode.workspace.getConfiguration('git-highlighter').get('highlightColor');
+        decorationType.dispose(); // Dispose the old decorationType
+        decorationType = vscode.window.createTextEditorDecorationType({
+            backgroundColor: color,
+            isWholeLine: true,
+        });
+        const ranges = lines.map(line => document.lineAt(line).range);
+        editor.setDecorations(decorationType, ranges);
+    }
+}
 function activate(context) {
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "git-highlighter" is now active!');
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with registerCommand
-    // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('git-highlighter.test1', () => {
-        // The code you place here will be executed every time your command is executed
-        // Display a message box to the user
-        console.log('test1!');
-        vscode.window.showInformationMessage('test1 active!');
+    loadHighlights();
+    vscode.workspace.onDidOpenTextDocument((document) => {
+        applyHighlights(document);
+    });
+    vscode.workspace.onDidOpenTextDocument((document) => {
+        applyHighlights(document);
+    });
+    let disposable = vscode.commands.registerCommand('git-highlighter.toggleHighlight', () => {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            const line = editor.selection.active.line;
+            const uri = editor.document.uri.toString();
+            if (!highlights[uri]) {
+                highlights[uri] = [];
+            }
+            const index = highlights[uri].indexOf(line);
+            if (index === -1) {
+                highlights[uri].push(line);
+            }
+            else {
+                highlights[uri].splice(index, 1);
+            }
+            applyHighlights(editor.document);
+            saveHighlights();
+        }
     });
     context.subscriptions.push(disposable);
 }
