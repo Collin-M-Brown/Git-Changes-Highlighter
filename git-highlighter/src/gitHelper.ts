@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
@@ -25,11 +26,18 @@ type Dictionary = {
 
 export function executeCommand(command: string): string {
     try {
-        const output = execSync(command);
-        return output.toString();
+        if (!vscode.workspace.workspaceFolders) {
+            console.error('No workspace folders open');
+            return '';
+        }
+
+        const workspacePath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+        const output = execSync(`cd ${workspacePath} && ${command}`);
+        const outputString = output.toString();
+        console.log(`Completed for command "${command}": ${outputString.length}`);
+        return outputString;
     } catch (error) {
-        console.error('Error executing command:', command);
-        console.error(error);
+        console.error(`Error executing command "${command}":`, error);
         process.exit(1);
     }
 }
@@ -42,9 +50,9 @@ export function createBookmark(line: number, label: string): Bookmark {
     };
 }
 
-export function diff() {
-    const branches = fs.readFileSync(path.join(__dirname, 'FileList'), 'utf8').split('\n');
-
+export function getHashSet(): [string[], CommitName, string[]] {
+    let branches = fs.readFileSync(path.join(__dirname, 'FileList'), 'utf8').split('\n');
+    branches = branches.filter(line => line.trim() !== '');
     const commitHash: string[] = [];
     const commitName: CommitName = {};
     let files: string[] = [];
@@ -71,15 +79,26 @@ export function diff() {
             }
         }
 
-        commitHash.push(hash);
+        commitHash.push(hash.trim());
         commitName[hash] = branch;
     }
 
     files = Array.from(new Set(files));
+    return [commitHash, commitName, files];
+}
 
+export function diff() {
+
+    const [commitHash, commitName, files] = getHashSet();
     const dictionary: Dictionary = { files: [] };
     
+    console.log(`commitHash: ${commitHash}`);
+    console.log(`commitHash: ${commitHash[0].length}`);
     for (let file of files) {
+        if (file.trim() === '') {
+            continue;
+        }
+        console.log(`parsing blame for file: ${file}`);
         const fileData: FileData = {
             path: file,
             bookmarks: []
@@ -88,8 +107,10 @@ export function diff() {
         let index = 0;
 
         while (index < blame.length) {
-            const line = blame[index].split(' ')[0];
+            const line = blame[index].split(' ')[0].trim();
+            console.log(`Parsing hash from line: ${line}, ${line.length}`);
             if (commitHash.includes(line)) {
+                console.log(`hash found: ${line}, ${line.length}`);
                 const name = commitName[line];
                 if (index + 1 < blame.length && commitHash.includes(blame[index + 1].split(' ')[0])) {
                     fileData.bookmarks.push(createBookmark(index, name));
