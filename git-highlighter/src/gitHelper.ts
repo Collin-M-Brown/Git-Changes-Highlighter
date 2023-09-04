@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 
 let highlights: { [uri: string]: number[] } = {};
 
-type Bookmark = {
+export type Bookmark = {
     line: number;
     column: number;
     label: string;
@@ -24,14 +24,19 @@ type Dictionary = {
     files: FileData[];
 };
 
+export function getWorkspacePath(): string {
+    if (!vscode.workspace.workspaceFolders) {
+        console.error('No workspace folders open');
+        return '';
+    }
+
+    return vscode.workspace.workspaceFolders[0].uri.fsPath;
+}
+
 export function executeCommand(command: string): string {
     try {
-        if (!vscode.workspace.workspaceFolders) {
-            console.error('No workspace folders open');
-            return '';
-        }
 
-        const workspacePath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+        const workspacePath = getWorkspacePath();
         const output = execSync(`cd ${workspacePath} && ${command}`);
         const outputString = output.toString();
         console.log(`Completed for command "${command}": ${outputString.length}`);
@@ -42,7 +47,7 @@ export function executeCommand(command: string): string {
     }
 }
 
-export function createBookmark(line: number, label: string): Bookmark {
+function createBookmark(line: number, label: string): Bookmark {
     return {
       line: line,
       column: 1,
@@ -50,7 +55,7 @@ export function createBookmark(line: number, label: string): Bookmark {
     };
 }
 
-export function getHashSet(): [string[], CommitName, string[]] {
+function getHashSet(): [string[], CommitName, string[]] {
     let branches = fs.readFileSync(path.join(__dirname, 'FileList'), 'utf8').split('\n');
     branches = branches.filter(line => line.trim() !== '');
     const commitHash: string[] = [];
@@ -87,7 +92,7 @@ export function getHashSet(): [string[], CommitName, string[]] {
     return [commitHash, commitName, files];
 }
 
-export function diff() {
+export function compileDiffLog() {
 
     const [commitHash, commitName, files] = getHashSet();
     const dictionary: Dictionary = { files: [] };

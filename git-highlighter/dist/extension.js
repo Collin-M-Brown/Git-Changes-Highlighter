@@ -25,19 +25,23 @@ module.exports = require("path");
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.diff = exports.getHashSet = exports.createBookmark = exports.executeCommand = void 0;
+exports.compileDiffLog = exports.executeCommand = exports.getWorkspacePath = void 0;
 const vscode = __webpack_require__(1);
 const fs = __webpack_require__(2);
 const path = __webpack_require__(3);
 const child_process_1 = __webpack_require__(6);
 let highlights = {};
+function getWorkspacePath() {
+    if (!vscode.workspace.workspaceFolders) {
+        console.error('No workspace folders open');
+        return '';
+    }
+    return vscode.workspace.workspaceFolders[0].uri.fsPath;
+}
+exports.getWorkspacePath = getWorkspacePath;
 function executeCommand(command) {
     try {
-        if (!vscode.workspace.workspaceFolders) {
-            console.error('No workspace folders open');
-            return '';
-        }
-        const workspacePath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+        const workspacePath = getWorkspacePath();
         const output = (0, child_process_1.execSync)(`cd ${workspacePath} && ${command}`);
         const outputString = output.toString();
         console.log(`Completed for command "${command}": ${outputString.length}`);
@@ -56,7 +60,6 @@ function createBookmark(line, label) {
         label: label,
     };
 }
-exports.createBookmark = createBookmark;
 function getHashSet() {
     let branches = fs.readFileSync(path.join(__dirname, 'FileList'), 'utf8').split('\n');
     branches = branches.filter(line => line.trim() !== '');
@@ -89,8 +92,7 @@ function getHashSet() {
     files = Array.from(new Set(files));
     return [commitHash, commitName, files];
 }
-exports.getHashSet = getHashSet;
-function diff() {
+function compileDiffLog() {
     const [commitHash, commitName, files] = getHashSet();
     const dictionary = { files: [] };
     console.log(`commitHash: ${commitHash}`);
@@ -132,7 +134,7 @@ function diff() {
     const json = JSON.stringify(dictionary, null, 4);
     fs.writeFileSync(path.join(__dirname, 'git_highlighter.json'), json, 'utf8');
 }
-exports.diff = diff;
+exports.compileDiffLog = compileDiffLog;
 
 
 /***/ }),
@@ -199,15 +201,40 @@ function saveHighlights() {
     fs.writeFileSync(filePath, JSON.stringify(highlights));
 }
 function loadHighlights() {
-    const filePath = path.join(__dirname, 'highlights.json');
+    const filePath = path.join(__dirname, 'git_highlighter.json');
     if (fs.existsSync(filePath)) {
-        const data = fs.readFileSync(filePath, 'utf-8');
-        highlights = JSON.parse(data);
+        const data = fs.readFileSync(filePath, 'utf8');
+        const highlightData = JSON.parse(data);
+        highlights = {}; // Clear the old highlights
+        for (const file of highlightData.files) {
+            let fullPath;
+            if (vscode.workspace.workspaceFolders) {
+                fullPath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, file.path);
+            }
+            else {
+                fullPath = file.path;
+            }
+            const uri = vscode.Uri.file(fullPath).toString();
+            highlights[uri] = [];
+            // Iterate over the bookmarks
+            for (let i = 0; i < file.bookmarks.length; i++) {
+                // If this bookmark and the next one have labels, highlight all lines between them
+                if (file.bookmarks[i].label && file.bookmarks[i + 1]?.label) {
+                    for (let line = file.bookmarks[i].line; line <= file.bookmarks[i + 1].line; line++) {
+                        highlights[uri].push(line);
+                    }
+                    // Otherwise, just highlight the line of this bookmark
+                }
+                else {
+                    highlights[uri].push(file.bookmarks[i].line);
+                }
+            }
+        }
     }
 }
 function applyHighlights(document) {
-    const editor = vscode.window.activeTextEditor;
-    if (editor && document === editor.document) {
+    const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
+    if (editor) {
         const uri = document.uri.toString();
         const lines = highlights[uri] || [];
         const color = vscode.workspace.getConfiguration('git-highlighter').get('highlightColor');
@@ -221,12 +248,17 @@ function applyHighlights(document) {
     }
 }
 function activate(context) {
+    // Load the highlights from the JSON file
     loadHighlights();
-    vscode.workspace.onDidOpenTextDocument((document) => {
-        applyHighlights(document);
+    // Apply the highlights to all currently visible editors
+    vscode.window.visibleTextEditors.forEach(editor => {
+        applyHighlights(editor.document);
     });
-    vscode.workspace.onDidOpenTextDocument((document) => {
-        applyHighlights(document);
+    // Apply the highlights to any editor that becomes visible
+    vscode.window.onDidChangeVisibleTextEditors(editors => {
+        for (const editor of editors) {
+            applyHighlights(editor.document);
+        }
     });
     let disposable = vscode.commands.registerCommand('git-highlighter.toggleHighlight', () => {
         const editor = vscode.window.activeTextEditor;
@@ -250,8 +282,11 @@ function activate(context) {
     let testCommandDisposable = vscode.commands.registerCommand('git-highlighter.testDiff', () => {
         try {
             vscode.window.showInformationMessage("Diff started");
-            (0, gitHelper_1.diff)(); // This will run the diff function when the test command is run
-            //executeCommand('pwd');
+            (0, gitHelper_1.compileDiffLog)(); // Run the diff function
+            loadHighlights(); // Load the highlights from the created JSON file
+            for (const editor of vscode.window.visibleTextEditors) {
+                applyHighlights(editor.document); // Apply the highlights to all open editors
+            }
         }
         catch (error) {
             vscode.window.showErrorMessage("Diff failed");
