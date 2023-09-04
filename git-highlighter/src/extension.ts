@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { executeCommand, diff, createBookmark } from './gitHelper';
 
 let highlights: { [uri: string]: number[] } = {};
 let decorationType = vscode.window.createTextEditorDecorationType({
