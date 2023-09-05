@@ -21,9 +21,9 @@ type CommitName = {
     [key: string]: string;
 };
 
-type Dictionary = {
-    files: FileData[];
-};
+//type Dictionary = {
+//    files: FileData[];
+//};
 
 export function getWorkspacePath(): string {
     if (!vscode.workspace.workspaceFolders) {
@@ -47,13 +47,13 @@ export function executeCommand(command: string): string {
     }
 }
 
-function createBookmark(line: number, label: string): Bookmark {
-    return {
-      line: line,
-      column: 1,
-      label: label,
-    };
-}
+//function createBookmark(line: number, label: string): Bookmark {
+//    return {
+//      line: line,
+//      column: 1,
+//      label: label,
+//    };
+//}
 
 function getHashSet(): [string[], CommitName, string[]] {
     console.log(path.join(workspacePath, '.vscode/CommitList'));
