@@ -4,6 +4,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 
 let highlights: { [uri: string]: number[] } = {};
+const workspacePath = getWorkspacePath();
 
 export type Bookmark = {
     line: number;
@@ -36,7 +37,6 @@ export function getWorkspacePath(): string {
 export function executeCommand(command: string): string {
     try {
 
-        const workspacePath = getWorkspacePath();
         const output = execSync(`cd ${workspacePath} && ${command}`);
         const outputString = output.toString();
         console.log(`Completed for command "${command}": ${outputString.length}`);
@@ -56,7 +56,10 @@ function createBookmark(line: number, label: string): Bookmark {
 }
 
 function getHashSet(): [string[], CommitName, string[]] {
-    let branches = fs.readFileSync(path.join(__dirname, 'FileList'), 'utf8').split('\n');
+    console.log(path.join(workspacePath, '.vscode/CommitList'));
+    let branches = fs.readFileSync(path.join(workspacePath, '.vscode/CommitList'), 'utf8').split('\n');
+    //let branches = fs.readFileSync(path.join(__dirname, 'FileList'), 'utf8').split('\n');
+
     branches = branches.filter(line => line.trim() !== '');
     const commitHash: string[] = [];
     const commitName: CommitName = {};
@@ -92,48 +95,38 @@ function getHashSet(): [string[], CommitName, string[]] {
     return [commitHash, commitName, files];
 }
 
-export function compileDiffLog() {
-
+export default function compileDiffLog() {
     const [commitHash, commitName, files] = getHashSet();
-    const dictionary: Dictionary = { files: [] };
+    const highlights: { [uri: string]: number[] } = {};
     
-    console.log(`commitHash: ${commitHash}`);
-    console.log(`commitHash: ${commitHash[0].length}`);
     for (let file of files) {
         if (file.trim() === '') {
             continue;
         }
-        console.log(`parsing blame for file: ${file}`);
-        const fileData: FileData = {
-            path: file,
-            bookmarks: []
-        };
+        const uri = vscode.Uri.file(path.join(workspacePath, file)).toString();
+        highlights[uri] = [];
+
         const blame = executeCommand(`git blame -l ${file}`).split('\n');
         let index = 0;
 
         while (index < blame.length) {
             const line = blame[index].split(' ')[0].trim();
-            console.log(`Parsing hash from line: ${line}, ${line.length}`);
             if (commitHash.includes(line)) {
-                console.log(`hash found: ${line}, ${line.length}`);
-                const name = commitName[line];
                 if (index + 1 < blame.length && commitHash.includes(blame[index + 1].split(' ')[0])) {
-                    fileData.bookmarks.push(createBookmark(index, name));
                     index++;
                     while (index + 1 < blame.length && commitHash.includes(blame[index + 1].split(' ')[0])) {
-                        fileData.bookmarks.push(createBookmark(index, "========="));
+                        highlights[uri].push(index);
                         index++;
                     }
-                    fileData.bookmarks.push(createBookmark(index, "========="));
+                    highlights[uri].push(index);
                 } else {
-                    fileData.bookmarks.push(createBookmark(index, name));
+                    highlights[uri].push(index);
                 }
             }
             index++;
         }
-        dictionary.files.push(fileData);
     }
 
-    const json = JSON.stringify(dictionary, null, 4);
-    fs.writeFileSync(path.join(__dirname, 'git_highlighter.json'), json, 'utf8');
+    const json = JSON.stringify(highlights, null, 4);
+    fs.writeFileSync(path.join(__dirname, 'highlights.json'), json, 'utf8');
 }
