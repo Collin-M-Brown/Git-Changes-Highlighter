@@ -9,26 +9,14 @@ module.exports = require("vscode");
 
 /***/ }),
 /* 2 */
-/***/ ((module) => {
-
-module.exports = require("fs");
-
-/***/ }),
-/* 3 */
-/***/ ((module) => {
-
-module.exports = require("path");
-
-/***/ }),
-/* 4 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.executeCommand = exports.getWorkspacePath = void 0;
 const vscode = __webpack_require__(1);
-const fs = __webpack_require__(2);
-const path = __webpack_require__(3);
+const fs = __webpack_require__(3);
+const path = __webpack_require__(4);
 const child_process_1 = __webpack_require__(5);
 let highlights = {};
 const workspacePath = getWorkspacePath();
@@ -48,8 +36,9 @@ function executeCommand(command) {
         return outputString;
     }
     catch (error) {
-        console.error(`Error executing command "${command}":`, error);
-        process.exit(1);
+        console.error(`Error executing command "${command}":`, error); //seems to be trigged by deleted file that has blame in it...
+        //process.exit(1);
+        return "";
     }
 }
 exports.executeCommand = executeCommand;
@@ -103,7 +92,10 @@ function compileDiffLog() {
         }
         const uri = vscode.Uri.file(path.join(workspacePath, file)).toString();
         highlights[uri] = [];
-        const blame = executeCommand(`git blame -l ${file}`).split('\n');
+        const blame = executeCommand(`git blame -l ${file}`).trim().split('\n');
+        if (blame.length === 0) {
+            continue;
+        }
         let index = 0;
         while (index < blame.length) {
             const line = blame[index].split(' ')[0].trim();
@@ -124,10 +116,23 @@ function compileDiffLog() {
         }
     }
     const json = JSON.stringify(highlights, null, 4);
-    fs.writeFileSync(path.join(__dirname, 'highlights.json'), json, 'utf8');
+    //fs.writeFileSync(path.join(__dirname, 'highlights.json'), json, 'utf8');
+    return json;
 }
 exports["default"] = compileDiffLog;
 
+
+/***/ }),
+/* 3 */
+/***/ ((module) => {
+
+module.exports = require("fs");
+
+/***/ }),
+/* 4 */
+/***/ ((module) => {
+
+module.exports = require("path");
 
 /***/ }),
 /* 5 */
@@ -179,43 +184,28 @@ exports.deactivate = exports.activate = void 0;
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = __webpack_require__(1);
-const fs = __webpack_require__(2);
-const path = __webpack_require__(3);
-const gitHelper_1 = __webpack_require__(4);
+const gitHelper_1 = __webpack_require__(2);
 const process_1 = __webpack_require__(6);
 let highlights = {};
 let decorationType = vscode.window.createTextEditorDecorationType({
     backgroundColor: 'transparent',
     isWholeLine: true,
 });
-function saveHighlights() {
-    const filePath = path.join(__dirname, 'highlights.json');
-    fs.writeFileSync(filePath, JSON.stringify(highlights));
-}
+//function saveHighlights() {
+//    const filePath = path.join(__dirname, 'highlights.json');
+//    fs.writeFileSync(filePath, JSON.stringify(highlights));
+//}
+let jsonhighlights = "";
 function loadHighlights() {
     //console.log("Starting loadHighlights function");
-    const filePath = path.join(__dirname, 'highlights.json');
+    //const filePath = path.join(__dirname, 'highlights.json');
     //console.log(`File path: ${filePath}`);
-    if (fs.existsSync(filePath)) {
-        //console.log("File exists, reading file");
-        try {
-            const data = fs.readFileSync(filePath, 'utf8'); //this can be highlights string?
-            console.log(`Data: ${data}`);
-            if (data.trim() !== "") {
-                highlights = JSON.parse(data);
-            }
-            else {
-                console.log("File is empty, not attempting to parse");
-            }
-        }
-        catch (error) {
-            console.error("Error reading file or parsing JSON:", error);
-        }
+    if (jsonhighlights.trim() !== "") {
+        highlights = JSON.parse(jsonhighlights);
     }
     else {
-        console.log("File does not exist");
+        console.log("File is empty, not attempting to parse");
     }
-    console.log("Finished loadHighlights function");
 }
 function applyHighlights(document) {
     console.log("Applying highlights in applyHighlights");
@@ -280,7 +270,7 @@ function activate(context) {
                 highlights[uri].splice(index, 1);
             }
             applyHighlights(editor.document);
-            saveHighlights();
+            //saveHighlights();
         }
     });
     console.log("Registering test command");
@@ -288,7 +278,7 @@ function activate(context) {
         try {
             console.log("Starting diff");
             vscode.window.showInformationMessage("Diff started");
-            (0, gitHelper_1.default)(); // Run the diff function and write to highlights.json
+            jsonhighlights = (0, gitHelper_1.default)(); // Run the diff function and write to highlights.json
             loadHighlights(); // Reload the highlights
             for (const editor of vscode.window.visibleTextEditors) {
                 applyHighlights(editor.document); // Apply the highlights to all open editors

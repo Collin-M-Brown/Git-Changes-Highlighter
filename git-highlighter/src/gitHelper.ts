@@ -36,14 +36,14 @@ export function getWorkspacePath(): string {
 
 export function executeCommand(command: string): string {
     try {
-
         const output = execSync(`cd ${workspacePath} && ${command}`);
         const outputString = output.toString();
         console.log(`Completed for command "${command}": ${outputString.length}`);
         return outputString;
     } catch (error) {
-        console.error(`Error executing command "${command}":`, error);
-        process.exit(1);
+        console.error(`Error executing command "${command}":`, error); //seems to be trigged by deleted file that has blame in it...
+        //process.exit(1);
+        return "";
     }
 }
 
@@ -106,7 +106,10 @@ export default function compileDiffLog() {
         const uri = vscode.Uri.file(path.join(workspacePath, file)).toString();
         highlights[uri] = [];
 
-        const blame = executeCommand(`git blame -l ${file}`).split('\n');
+        const blame = executeCommand(`git blame -l ${file}`).trim().split('\n');
+        if (blame.length === 0) {
+            continue;
+        }
         let index = 0;
 
         while (index < blame.length) {
@@ -128,5 +131,6 @@ export default function compileDiffLog() {
     }
 
     const json = JSON.stringify(highlights, null, 4);
-    fs.writeFileSync(path.join(__dirname, 'highlights.json'), json, 'utf8');
+    //fs.writeFileSync(path.join(__dirname, 'highlights.json'), json, 'utf8');
+    return json;
 }

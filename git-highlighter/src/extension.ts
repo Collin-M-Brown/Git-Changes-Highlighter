@@ -13,32 +13,22 @@ let decorationType = vscode.window.createTextEditorDecorationType({
     isWholeLine: true,
 });
 
-function saveHighlights() {
-    const filePath = path.join(__dirname, 'highlights.json');
-    fs.writeFileSync(filePath, JSON.stringify(highlights));
-}
+//function saveHighlights() {
+//    const filePath = path.join(__dirname, 'highlights.json');
+//    fs.writeFileSync(filePath, JSON.stringify(highlights));
+//}
 
+let jsonhighlights = "";
 function loadHighlights() {
-    console.log("Starting loadHighlights function");
-    const filePath = path.join(__dirname, 'highlights.json');
-    console.log(`File path: ${filePath}`);
-    
-    if (fs.existsSync(filePath)) {
-        console.log("File exists, reading file");
-        try {
-            const data = fs.readFileSync(filePath, 'utf8');
-            if (data.trim() !== "") {
-                highlights = JSON.parse(data);
-            } else {
-                console.log("File is empty, not attempting to parse");
-            }
-        } catch (error) {
-            console.error("Error reading file or parsing JSON:", error);
-        }
+    //console.log("Starting loadHighlights function");
+    //const filePath = path.join(__dirname, 'highlights.json');
+    //console.log(`File path: ${filePath}`);
+
+    if (jsonhighlights.trim() !== "") {
+        highlights = JSON.parse(jsonhighlights);
     } else {
-        console.log("File does not exist");
+        console.log("File is empty, not attempting to parse");
     }
-    console.log("Finished loadHighlights function");
 }
 
 function applyHighlights(document: vscode.TextDocument) {
@@ -109,7 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
     
             applyHighlights(editor.document);
-            saveHighlights();
+            //saveHighlights();
         }
     });
 
@@ -118,7 +108,7 @@ export function activate(context: vscode.ExtensionContext) {
         try {
             console.log("Starting diff");
             vscode.window.showInformationMessage("Diff started");
-            compileDiffLog(); // Run the diff function and write to highlights.json
+            jsonhighlights = compileDiffLog(); // Run the diff function and write to highlights.json
             loadHighlights(); // Reload the highlights
             for (const editor of vscode.window.visibleTextEditors) {
                 applyHighlights(editor.document); // Apply the highlights to all open editors
