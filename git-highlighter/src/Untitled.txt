@@ -1,0 +1,62 @@
+Workspace path: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter
+extensionHostProcess.js:108
+git-highlighter is now active!
+extensionHostProcess.js:108
+Registering test command
+extensionHostProcess.js:108
+Starting diff
+extensionHostProcess.js:108
+/Users/cb/Git/Git-Changes-Highlighter/git-highlighter/.vscode/CommitList
+extensionHostProcess.js:108
+Completed for command "git log | grep -B 7 -m 1 "Fixes for dynamic higlight loading"": 194
+extensionHostProcess.js:108
+Base branch: "Fixes for dynamic higlight loading" -> b46dac954ba2a1fd6ccb3e97c6fa5fc33d24fe10
+extensionHostProcess.js:108
+Completed for command "git diff b46dac954ba2a1fd6ccb3e97c6fa5fc33d24fe10~ b46dac954ba2a1fd6ccb3e97c6fa5fc33d24fe10 --name-only": 186
+extensionHostProcess.js:108
+Completed for command "git log | grep -B 7 -m 1 "json compiler fixes"": 246
+extensionHostProcess.js:108
+Completed for command "git diff 9ff08ff 4400df7 --name-only": 192
+extensionHostProcess.js:108
+Completed for command "git log | grep "commit 4400df7"": 48
+extensionHostProcess.js:108
+Merged branch: "json compiler fixes" -> 4400df7daba8d52d3f0c75f7041f02575976d47f
+
+extensionHostProcess.js:108
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter/.gitignore
+extensionHostProcess.js:108
+Completed for command "git ls-files .gitignore": 0
+extensionHostProcess.js:108
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter/git-highlighter/dist/extension.js
+extensionHostProcess.js:108
+Completed for command "git ls-files git-highlighter/dist/extension.js": 0
+extensionHostProcess.js:108
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter/git-highlighter/dist/extension.js.map
+extensionHostProcess.js:108
+Completed for command "git ls-files git-highlighter/dist/extension.js.map": 0
+extensionHostProcess.js:108
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter/git-highlighter/dist/highlights.json
+extensionHostProcess.js:108
+Completed for command "git ls-files git-highlighter/dist/highlights.json": 0
+extensionHostProcess.js:108
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter/git-highlighter/src/extension.ts
+extensionHostProcess.js:108
+Completed for command "git ls-files git-highlighter/src/extension.ts": 0
+extensionHostProcess.js:108
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter/git-highlighter/src/gitHelper.ts
+extensionHostProcess.js:108
+Completed for command "git ls-files git-highlighter/src/gitHelper.ts": 0
+extensionHostProcess.js:108
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter/git-highlighter/package.json
+extensionHostProcess.js:108
+Completed for command "git ls-files git-highlighter/package.json": 0
+extensionHostProcess.js:108
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/git-highlighter/tsconfig.json
+extensionHostProcess.js:108
+Completed for command "git ls-files tsconfig.json": 14
+extensionHostProcess.js:108
+Completed for command "git blame -l tsconfig.json": 1917
+extensionHostProcess.js:108
+Applying highlights in applyHighlights
+extensionHostProcess.js:108
+Ranges: 

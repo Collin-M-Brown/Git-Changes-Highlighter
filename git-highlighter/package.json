@@ -22,8 +22,8 @@
         "title": "git-highlighter: test1"
       },
       {
-        "command": "git-highlighter.toggleHighlight",
-        "title": "git-highlighter: Toggle Highlight"
+        "command": "git-highlighter.highlightLine",
+        "title": "git-highlighter: Highlight Line"
       },
       {
         "command": "git-highlighter.highlightCommits",
@@ -32,26 +32,46 @@
     ],
     "configuration": [
       {
-          "title": "Git Highlighter",
-          "properties": {
-              "git-highlighter.highlightColor": {
-                  "type": "string",
-                  "default": "#2259b27e",
-                  "description": "The color to use for highlights"
-              }
-          }
-      },
-      {
-        "title": "Git Highlighter: CommitListPath",
+        "title": "Git Highlighter",
         "properties": {
-            "git-highlighter.CommitListPath": {
-                "type": "string",
-                "default": "",
-                "description": "The path where the commit names are stored"
+          "git-highlighter.highlightColor": {
+            "type": "string",
+            "default": "#2259b27e",
+            "description": "The color to use for highlights"
+          },
+          "git-highlighter.CommitListPath": {
+            "type": "string",
+            "default": null,
+            "description": "The path where the commit names are stored"
+          },
+          "git-highlighter.HighlightList": {
+            "type": "array",
+            "default": [],
+            "description": "The commits you wish to highlight",
+            "items": {
+              "type": "string"
             }
+          }
         }
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "yourViewContainer",
+          "title": "Your View Container",
+          "icon": "$(file-directory)"
+        }
+      ]
+    },
+    "views": {
+      "yourViewContainer": [
+        {
+          "id": "yourView",
+          "name": "Your View"
+        }
+      ]
     }
-  ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

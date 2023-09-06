@@ -2,7 +2,20 @@ import * as vscode from 'vscode';
 import { exit } from 'process';
 import { debugLog } from './library';
 import compileDiffLog from './gitHelper';
+import * as path from 'path';
 
+/*
+Example format of highlights.json:
+TODO: Add these files to watchlist and update when changed
+{
+    "file:///Users/cb/Git/Git-Changes-Highlighter/git-highlighter/src/extension.ts": [
+        15,
+        22,
+    ],
+    "file:///Users/cb/Git/Git-Changes-Highlighter/git-highlighter/src/gitHelper.ts": [
+        ...,
+    ]
+}*/
 let jsonhighlights = "";
 let highlights: { [uri: string]: number[] } = {};
 
@@ -39,7 +52,7 @@ export function applyHighlights(document: vscode.TextDocument) {
         
         try {
             const ranges = lines.map(line => document.lineAt(line).range);
-            debugLog(`Ranges: ${ranges}`);
+            //debugLog(`Ranges: ${ranges}`);
             editor.setDecorations(decorationType, ranges);
         } catch(error) {
             console.error('Error while setting decorations:', error);
@@ -48,7 +61,7 @@ export function applyHighlights(document: vscode.TextDocument) {
 }
 
 export function highlightLine(context: vscode.ExtensionContext) {
-    let disposable = vscode.commands.registerCommand('git-highlighter.toggleHighlight', () => {
+    let disposable = vscode.commands.registerCommand('git-highlighter.highlightLine"', () => {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const line = editor.selection.active.line;
@@ -77,8 +90,9 @@ export function highlightCommits(context: vscode.ExtensionContext) {
     let disposable = vscode.commands.registerCommand('git-highlighter.highlightCommits', () => {
         try {
             debugLog("Starting diff");
-            vscode.window.showInformationMessage("Running git-highlighter");
+            //vscode.window.showInformationMessage("Git Highlighter Activated!");
             jsonhighlights = compileDiffLog(); // Run the diff function and write to highlights.json
+            //console.log(jsonhighlights);
             loadHighlights(); // Reload the highlights
             for (const editor of vscode.window.visibleTextEditors) {
                 applyHighlights(editor.document); // Apply the highlights to all open editors

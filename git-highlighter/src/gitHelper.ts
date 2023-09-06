@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { getWorkspacePath } from './library';
+import { getWorkspacePath, getCommitList } from './library';
 import { debugLog } from './library';
 import { debug } from 'console';
 
@@ -19,55 +18,96 @@ export function executeCommand(command: string): string {
         debugLog(`Completed for command "${command}": ${outputString.length}`);
         return outputString;
     } catch (error) {
-        console.error(`Error executing command "${command}":`, error); //seems to be trigged by deleted file that has blame in it...
-        process.exit(1);
+        console.error(`Error executing command "${command}":`); //seems to be trigged by deleted file that has blame in it...
+        vscode.window.showErrorMessage(`Error executing command: ${command}`);
+        //process.exit(1);
+        return ""
     }
 }
 
+function getGitLog(branch: string): string {
+    let log: string = executeCommand(`git log | grep -B 7 -m 1 ${branch}`);
+    if (log === "") {
+        vscode.window.showInformationMessage(`Branch: ${branch}, not found, spelling and spacing is case sensitive`);
+    }
+    return log;
+}
+
+function getChangedFiles(hash1: string, hash2: string): string[] {
+    let files = executeCommand(`git diff --relative ${hash1}..${hash2} --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
+    
+    //n^2 to compare all, could sort them both
+    let GitFiles = executeCommand(`git ls-files`).split('\n').map(s => s.trim()).filter(Boolean);
+
+    files.sort();
+    GitFiles.sort();
+
+    let res: string[] = [];
+    let i = 0, j = 0;
+    while (i < files.length && j < GitFiles.length) {
+        //console.log(`Files[i]: ${files[i]} GitFiles[j]: ${GitFiles[j]}`);
+        if (files[i] === GitFiles[j]) {
+            res.push(files[i]);
+            i++;
+            j++;
+        } else if (files[i] < GitFiles[j]) {
+            i++;
+        } else {
+            j++;
+        }
+    }
+
+    debugLog(`All Files with changes: ${res}`);
+    return res;
+}
+
 function getHashSet(): [string[], CommitName, string[]] {
-    //const user_path = vscode.workspace.getConfiguration('git-highlighter').get('CommitListPath'); TODO FIX
-    debugLog(path.join(workspacePath, '.vscode/CommitList'));    
-    let branches = fs.readFileSync(path.join(workspacePath, '.vscode/CommitList'), 'utf8').split('\n');
+    let branches = getCommitList();
 
     branches = branches.filter(line => line.trim() !== '');
-    const commitHash: string[] = [];
+    const commitHashSet: string[] = [];
     const commitName: CommitName = {};
     let files: string[] = [];
 
     for (let branch of branches) {
         branch = `"${branch.replace('[', '\\[').replace(']', '\\]')}"`;
 
-        const gitLog = executeCommand(`git log | grep -B 7 -m 1 ${branch}`).split('\n');
+        const gitLog = getGitLog(branch).split('\n');
         let hash = '';
 
         if (gitLog.length > 1 && gitLog[1].includes('Merge:')) {
             const diff = gitLog[1].split(' ');
-            const f = executeCommand(`git diff ${diff[1]} ${diff[2]} --name-only`).split('\n');
+            const f = getChangedFiles(diff[1], diff[2]);
+            //console.log(`Diff file result: ${f}`);
             files = files.concat(f);
             const fullHash = `"commit ${diff[2]}"`;
             hash = executeCommand(`git log | grep ${fullHash}`).split(' ')[1];
-            console.log(`Merged branch: ${branch} -> ${hash}`);
+            //console.log(`Merged branch: ${branch} -> ${hash}`);
         } else {
             for (let l of gitLog) {
                 if (l.includes('commit')) {
                     hash = l.split(' ')[1];
-                    console.log(`Non-commit merge: ${branch} -> ${hash}`);
-                    const f = executeCommand(`git diff ${hash}~ ${hash} --name-only`).split('\n');
+                    //console.log(`Base branch: ${branch} -> ${hash}`);
+                    //const f = executeCommand(`git diff --relative ${hash}~ ${hash} --name-only`).split('\n');
+                    const f = getChangedFiles(`${hash}~`, `${hash}`);
                     files = files.concat(f);
                 }
             }
         }
 
-        commitHash.push(hash.trim());
+        commitHashSet.push(hash.trim());
         commitName[hash] = branch;
     }
 
     files = Array.from(new Set(files));
-    return [commitHash, commitName, files];
+    vscode.window.showInformationMessage(`Changes found in ${files.length} files`);
+    return [commitHashSet, commitName, files];
 }
 
-export default function compileDiffLog() {
-    const [commitHash, commitName, files] = getHashSet();
+export default function compileDiffLog(): string {
+
+    //Get a set of all the hash values used for commits. Want to avoid calling unless commitList changes
+    const [commitHashSet, commitName, files] = getHashSet();
     const highlights: { [uri: string]: number[] } = {};
     
     for (let file of files) {
@@ -76,11 +116,9 @@ export default function compileDiffLog() {
         }
         const uri = vscode.Uri.file(path.join(workspacePath, file)).toString();
         highlights[uri] = [];
-        debugLog(`Blame file: ${path.join(workspacePath, file)}`);
-        const fileInGit = executeCommand(`git ls-files ${file}`);
-        if (!fileInGit) {
-            continue;
-        }
+
+        ///Users/cb/Git/Git-Changes-Highlighter<>/git-highlighter/dist/extension.js
+        //debugLog(`Blame file: ${path.join(workspacePath, file)}`);
         const blame = executeCommand(`git blame -l ${file}`).trim().split('\n');
         if (blame.length === 0) {
             continue;
@@ -89,10 +127,10 @@ export default function compileDiffLog() {
 
         while (index < blame.length) {
             const line = blame[index].split(' ')[0].trim();
-            if (commitHash.includes(line)) {
-                if (index + 1 < blame.length && commitHash.includes(blame[index + 1].split(' ')[0])) {
+            if (commitHashSet.includes(line)) {
+                if (index + 1 < blame.length && commitHashSet.includes(blame[index + 1].split(' ')[0])) {
                     index++;
-                    while (index + 1 < blame.length && commitHash.includes(blame[index + 1].split(' ')[0])) {
+                    while (index + 1 < blame.length && commitHashSet.includes(blame[index + 1].split(' ')[0])) {
                         highlights[uri].push(index);
                         index++;
                     }

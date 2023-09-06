@@ -9,9 +9,28 @@ import { highlightCommits, highlightLine, applyHighlights } from './commands';
 //    fs.writeFileSync(filePath, JSON.stringify(highlights));
 //}
 
+export class YourDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+    getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+        return element;
+    }
+
+    getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
+        if (element) {
+            // If element is defined, return its children
+            return Promise.resolve([
+                // Your code here
+            ]);
+        } else {
+            // If element is undefined, return the root nodes of the tree
+            return Promise.resolve([
+                new vscode.TreeItem('Item 1'),
+                new vscode.TreeItem('Item 2')
+            ]);
+        }
+    }
+}
 
 export function activate(context: vscode.ExtensionContext) {
-        
     // Check if editor window has changed and load highlights if it has
     // Apply the highlights to any editor that becomes visible
     vscode.window.onDidChangeVisibleTextEditors(editors => {
@@ -19,10 +38,19 @@ export function activate(context: vscode.ExtensionContext) {
             applyHighlights(editor.document);
         }
     });
+    //vscode.window.showInformationMessage("git-highlighter: activated.");
 
+    //TODO: add file watcher to update
     // Register the commands
+
+    //git-highlighter: Highlight Line
     highlightLine(context);
+
+    //git-highlighter: Highlight Commits
     highlightCommits(context);
+
+    const yourDataProvider = new YourDataProvider();
+    vscode.window.registerTreeDataProvider('yourView', yourDataProvider);
 }
 
 // This method is called when your extension is deactivated
