@@ -22,7 +22,7 @@ function loadHighlights() {
 export function applyHighlights(document: vscode.TextDocument) {
     debugLog("Applying highlights in applyHighlights");
     const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
-    if (editor) {
+    if (editor) {f 
         const uri = document.uri.toString();
         const lines = highlights[uri] || [];
         const color = vscode.workspace.getConfiguration('git-highlighter').get('highlightColor');
