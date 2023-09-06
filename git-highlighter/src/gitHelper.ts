@@ -37,6 +37,7 @@ function getChangedFiles(hash1: string, hash2: string): string[] {
     let files = executeCommand(`git diff --relative ${hash1}..${hash2} --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
     
     //n^2 to compare all, could sort them both
+    //TODO: Optimize this to get all files first before filtering
     let GitFiles = executeCommand(`git ls-files`).split('\n').map(s => s.trim()).filter(Boolean);
 
     files.sort();
@@ -72,23 +73,21 @@ function getHashSet(): [string[], CommitName, string[]] {
     for (let branch of branches) {
         branch = `"${branch.replace('[', '\\[').replace(']', '\\]')}"`;
 
-        const gitLog = getGitLog(branch).split('\n');
+        const gitLog = getGitLog(branch).split('\n'); //TODO: Optimize<get all at once>
         let hash = '';
 
         if (gitLog.length > 1 && gitLog[1].includes('Merge:')) {
             const diff = gitLog[1].split(' ');
-            const f = getChangedFiles(diff[1], diff[2]);
+            const f = getChangedFiles(diff[1], diff[2]); 
             //console.log(`Diff file result: ${f}`);
             files = files.concat(f);
             const fullHash = `"commit ${diff[2]}"`;
-            hash = executeCommand(`git log | grep ${fullHash}`).split(' ')[1];
+            hash = executeCommand(`git log | grep ${fullHash}`).split(' ')[1]; //TODO: Optimize out
             //console.log(`Merged branch: ${branch} -> ${hash}`);
         } else {
             for (let l of gitLog) {
                 if (l.includes('commit')) {
                     hash = l.split(' ')[1];
-                    //console.log(`Base branch: ${branch} -> ${hash}`);
-                    //const f = executeCommand(`git diff --relative ${hash}~ ${hash} --name-only`).split('\n');
                     const f = getChangedFiles(`${hash}~`, `${hash}`);
                     files = files.concat(f);
                 }
@@ -117,8 +116,6 @@ export default function compileDiffLog(): string {
         const uri = vscode.Uri.file(path.join(workspacePath, file)).toString();
         highlights[uri] = [];
 
-        ///Users/cb/Git/Git-Changes-Highlighter<>/git-highlighter/dist/extension.js
-        //debugLog(`Blame file: ${path.join(workspacePath, file)}`);
         const blame = executeCommand(`git blame -l ${file}`).trim().split('\n');
         if (blame.length === 0) {
             continue;
