@@ -1,4 +1,8 @@
 {
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/git-highlighter"
+  },
   "name": "git-highlighter",
   "displayName": "Git Highlighter",
   "description": "",
@@ -22,8 +26,8 @@
         "title": "git-highlighter: Toggle Highlight"
       },
       {
-        "command": "git-highlighter.testDiff",
-        "title": "git-highlighter: Test Git Diff"
+        "command": "git-highlighter.highlightCommits",
+        "title": "git-highlighter: Highlight Commits"
       }
     ],
     "configuration": [
@@ -36,7 +40,17 @@
                   "description": "The color to use for highlights"
               }
           }
-      }
+      },
+      {
+        "title": "Git Highlighter: CommitListPath",
+        "properties": {
+            "git-highlighter.CommitListPath": {
+                "type": "string",
+                "default": "",
+                "description": "The path where the commit names are stored"
+            }
+        }
+    }
   ]
   },
   "scripts": {

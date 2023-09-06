@@ -2,8 +2,4 @@ git-highlighter/node_modules/*
 git-highlighter/dist/extension.js
 git-highlighter/dist/extension.js.map
 git-highlighter/dist/FileList
-git-highlighter/dist/git_highlighter.json
-git-highlighter/dist/extension.js
-git-highlighter/dist/extension.js.map
-git-highlighter/dist/extension.js
 **/**/*.js

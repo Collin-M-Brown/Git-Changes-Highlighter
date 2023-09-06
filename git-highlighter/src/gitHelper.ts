@@ -2,63 +2,32 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { getWorkspacePath } from './library';
+import { debugLog } from './library';
+import { debug } from 'console';
 
-let highlights: { [uri: string]: number[] } = {};
 const workspacePath = getWorkspacePath();
-
-export type Bookmark = {
-    line: number;
-    column: number;
-    label: string;
-};
-
-type FileData = {
-    path: string;
-    bookmarks: Bookmark[];
-};
-
 type CommitName = {
     [key: string]: string;
 };
 
-//type Dictionary = {
-//    files: FileData[];
-//};
-
-export function getWorkspacePath(): string {
-    if (!vscode.workspace.workspaceFolders) {
-        console.error('No workspace folders open');
-        return '';
-    }
-
-    return vscode.workspace.workspaceFolders[0].uri.fsPath;
-}
 
 export function executeCommand(command: string): string {
     try {
-        const output = execSync(`cd ${workspacePath} && ${command}`);
+        const output = execSync(`cd ${workspacePath} && ${command}`);// maybe cd at start
         const outputString = output.toString();
-        console.log(`Completed for command "${command}": ${outputString.length}`);
+        debugLog(`Completed for command "${command}": ${outputString.length}`);
         return outputString;
     } catch (error) {
         console.error(`Error executing command "${command}":`, error); //seems to be trigged by deleted file that has blame in it...
-        //process.exit(1);
-        return "";
+        process.exit(1);
     }
 }
 
-//function createBookmark(line: number, label: string): Bookmark {
-//    return {
-//      line: line,
-//      column: 1,
-//      label: label,
-//    };
-//}
-
 function getHashSet(): [string[], CommitName, string[]] {
-    console.log(path.join(workspacePath, '.vscode/CommitList'));
+    //const user_path = vscode.workspace.getConfiguration('git-highlighter').get('CommitListPath'); TODO FIX
+    debugLog(path.join(workspacePath, '.vscode/CommitList'));    
     let branches = fs.readFileSync(path.join(workspacePath, '.vscode/CommitList'), 'utf8').split('\n');
-    //let branches = fs.readFileSync(path.join(__dirname, 'FileList'), 'utf8').split('\n');
 
     branches = branches.filter(line => line.trim() !== '');
     const commitHash: string[] = [];
@@ -77,10 +46,12 @@ function getHashSet(): [string[], CommitName, string[]] {
             files = files.concat(f);
             const fullHash = `"commit ${diff[2]}"`;
             hash = executeCommand(`git log | grep ${fullHash}`).split(' ')[1];
+            console.log(`Merged branch: ${branch} -> ${hash}`);
         } else {
             for (let l of gitLog) {
                 if (l.includes('commit')) {
                     hash = l.split(' ')[1];
+                    console.log(`Non-commit merge: ${branch} -> ${hash}`);
                     const f = executeCommand(`git diff ${hash}~ ${hash} --name-only`).split('\n');
                     files = files.concat(f);
                 }
@@ -105,7 +76,11 @@ export default function compileDiffLog() {
         }
         const uri = vscode.Uri.file(path.join(workspacePath, file)).toString();
         highlights[uri] = [];
-
+        debugLog(`Blame file: ${path.join(workspacePath, file)}`);
+        const fileInGit = executeCommand(`git ls-files ${file}`);
+        if (!fileInGit) {
+            continue;
+        }
         const blame = executeCommand(`git blame -l ${file}`).trim().split('\n');
         if (blame.length === 0) {
             continue;
