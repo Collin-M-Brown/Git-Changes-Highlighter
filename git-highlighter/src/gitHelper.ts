@@ -4,8 +4,12 @@ import { execSync } from 'child_process';
 import { getWorkspacePath, getCommitList } from './library';
 import { debugLog } from './library';
 import { debug } from 'console';
+import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
 
 const workspacePath = getWorkspacePath();
+let gitLogPromise: Promise<Map<string, DefaultLogFields>> = setGitLog();
+let gitLogMap: Map<string, DefaultLogFields> = new Map();
+
 type CommitName = {
     [key: string]: string;
 };
@@ -21,15 +25,16 @@ export function executeCommand(command: string): string {
         console.error(`Error executing command "${command}":`); //seems to be trigged by deleted file that has blame in it...
         vscode.window.showErrorMessage(`Error executing command: ${command}`);
         //process.exit(1);
-        return ""
+        return "";
     }
 }
 
 function getGitLog(branch: string): string {
-    let log: string = executeCommand(`git log | grep -B 7 -m 1 ${branch}`);
-    if (log === "") {
-        vscode.window.showInformationMessage(`Branch: ${branch}, not found, spelling and spacing is case sensitive`);
-    }
+    //let log: string = executeCommand(`git log | grep -B 7 -m 1 ${branch}`);
+    //if (log === "") {
+    //    vscode.window.showInformationMessage(`Branch: ${branch}, not found, spelling and spacing is case sensitive`);
+    //}
+
     return log;
 }
 
@@ -62,37 +67,56 @@ function getChangedFiles(hash1: string, hash2: string): string[] {
     return res;
 }
 
-function getHashSet(): [string[], CommitName, string[]] {
-    let branches = getCommitList();
+async function setGitLog(): Promise<Map<string, DefaultLogFields>>  {
+
+    const git: SimpleGit = simpleGit(workspacePath);
+    const log = await git.log();
+    //console.log(log);
+
+    const map: Map<string, DefaultLogFields> = new Map();
+    for (let l of log.all) {
+        map.set(l.message, l);
+    }
+    return map;
+}
+
+async function getHashSet(): Promise<[string[], CommitName, string[]]> {
+    let branches: string[] = getCommitList();
 
     branches = branches.filter(line => line.trim() !== '');
     const commitHashSet: string[] = [];
     const commitName: CommitName = {};
     let files: string[] = [];
 
+    //// setGitLog should finish first
+    gitLogMap = await gitLogPromise;
+
+    //make a branch name to hashSet map
     for (let branch of branches) {
-        branch = `"${branch.replace('[', '\\[').replace(']', '\\]')}"`;
+        branch = `"${branch.replace('[', '\\[').replace(']', '\\]')}"`; //commit name
 
-        const gitLog = getGitLog(branch).split('\n'); //TODO: Optimize<get all at once>
-        let hash = '';
+        const logEntry = gitLogMap.get(branch);
+        //const gitLog = getGitLog(branch).split('\n'); //TODO: Optimize<get all at once>
 
-        if (gitLog.length > 1 && gitLog[1].includes('Merge:')) {
-            const diff = gitLog[1].split(' ');
-            const f = getChangedFiles(diff[1], diff[2]); 
-            //console.log(`Diff file result: ${f}`);
-            files = files.concat(f);
-            const fullHash = `"commit ${diff[2]}"`;
-            hash = executeCommand(`git log | grep ${fullHash}`).split(' ')[1]; //TODO: Optimize out
-            //console.log(`Merged branch: ${branch} -> ${hash}`);
-        } else {
-            for (let l of gitLog) {
-                if (l.includes('commit')) {
-                    hash = l.split(' ')[1];
-                    const f = getChangedFiles(`${hash}~`, `${hash}`);
-                    files = files.concat(f);
-                }
-            }
-        }
+        //Now I can redo using logEntry...
+
+        //if (gitLog.length > 1 && gitLog[1].includes('Merge:')) {
+        //    const diff = gitLog[1].split(' ');
+        //    const f = getChangedFiles(diff[1], diff[2]); 
+        //    //console.log(`Diff file result: ${f}`);
+        //    files = files.concat(f);
+        //    const fullHash = `"commit ${diff[2]}"`;
+        //    hash = executeCommand(`git log | grep ${fullHash}`).split(' ')[1]; //TODO: Optimize out
+        //    //console.log(`Merged branch: ${branch} -> ${hash}`);
+        //} else {
+        //    for (let l of gitLog) {
+        //        if (l.includes('commit')) {
+        //            hash = l.split(' ')[1];
+        //            const f = getChangedFiles(`${hash}~`, `${hash}`);
+        //            files = files.concat(f);
+        //        }
+        //    }
+        //}
 
         commitHashSet.push(hash.trim());
         commitName[hash] = branch;
@@ -103,10 +127,10 @@ function getHashSet(): [string[], CommitName, string[]] {
     return [commitHashSet, commitName, files];
 }
 
-export default function compileDiffLog(): string {
+export default async function compileDiffLog(): Promise<string> {
 
     //Get a set of all the hash values used for commits. Want to avoid calling unless commitList changes
-    const [commitHashSet, commitName, files] = getHashSet();
+    const [commitHashSet, commitName, files] = await getHashSet();
     const highlights: { [uri: string]: number[] } = {};
     
     for (let file of files) {
