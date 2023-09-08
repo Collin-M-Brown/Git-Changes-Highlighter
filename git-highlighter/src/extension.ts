@@ -3,40 +3,25 @@
 import * as vscode from 'vscode';
 import { debugLog, getWorkspacePath } from './library';
 import { highlightCommits, highlightLine, applyHighlights } from './commands';
+import { GitProcessor } from './gitHelper';
+import { FileDataProvider } from './fileTree';
 
-
-
-
-export class YourDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-    getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
-        return element;
-    }
-
-    getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-        if (element) {
-            // If element is defined, return its children
-            return Promise.resolve([
-                // Your code here
-            ]);
-        } else {
-            // If element is undefined, return the root nodes of the tree
-            return Promise.resolve([
-                new vscode.TreeItem('Item 1'),
-                new vscode.TreeItem('Item 2')
-            ]);
-        }
-    }
-}
+let started = false;
+let diffLog: string;
+let gitObject: GitProcessor = new GitProcessor();
 
 export async function activate(context: vscode.ExtensionContext) {
     // Check if editor window has changed and load highlights if it has
     // Apply the highlights to any editor that becomes visible
-    vscode.window.onDidChangeVisibleTextEditors(editors => {
+    vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
         for (const editor of editors) {
             applyHighlights(editor.document);
         }
     });
-
+    if (!started) {
+        diffLog = await gitObject.compileDiffLog();
+        started = true;
+    }
     //vscode.window.showInformationMessage("git-highlighter: activated.");
 
     //TODO: add file watcher to update
@@ -46,10 +31,16 @@ export async function activate(context: vscode.ExtensionContext) {
     highlightLine(context);
 
     //git-highlighter: Highlight Commits
-    highlightCommits(context);
+    highlightCommits(context, diffLog);
 
-    const yourDataProvider = new YourDataProvider();
-    vscode.window.registerTreeDataProvider('yourView', yourDataProvider);
+    //TreeView
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders !== undefined) {
+        const rootPath = workspaceFolders[0].uri.fsPath;
+        const fileDataProvider = new FileDataProvider(rootPath);
+        vscode.window.registerTreeDataProvider('yourView', fileDataProvider);
+    }
+    
 }
 
 // This method is called when your extension is deactivated
