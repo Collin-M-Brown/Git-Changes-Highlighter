@@ -5,15 +5,19 @@ import { getWorkspacePath, getCommitList } from './library';
 import { debugLog } from './library';
 import { debug } from 'console';
 import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
+import { debuglog } from 'util';
 
 const workspacePath = getWorkspacePath();
-let gitLogPromise: Promise<Map<string, DefaultLogFields>> = setGitLog();
+const git: SimpleGit = simpleGit(workspacePath);
+console.log("awaiting...");
+let gitLsFiles: Promise<string> = git.raw(['ls-files']);
+let gitBlame: Promise<string> = git.raw([])
+let gitLogPromise: Promise<Map<string, DefaultLogFields>> = setGitLogMap();
 let gitLogMap: Map<string, DefaultLogFields> = new Map();
 
-type CommitName = {
+type hashToMessageMap = {
     [key: string]: string;
 };
-
 
 export function executeCommand(command: string): string {
     try {
@@ -29,21 +33,17 @@ export function executeCommand(command: string): string {
     }
 }
 
-function getGitLog(branch: string): string {
-    //let log: string = executeCommand(`git log | grep -B 7 -m 1 ${branch}`);
-    //if (log === "") {
-    //    vscode.window.showInformationMessage(`Branch: ${branch}, not found, spelling and spacing is case sensitive`);
-    //}
-
-    return log;
+async function getChangedFiles(hash1: string, hash2: string): Promise<string[]> {
+    let files = (await git.raw(['diff', '--relative', `${hash1}..${hash2}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+    return files;
 }
 
-function getChangedFiles(hash1: string, hash2: string): string[] {
-    let files = executeCommand(`git diff --relative ${hash1}..${hash2} --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
-    
+async function filterFiles(files: string[]): Promise<string[]> {
+
     //n^2 to compare all, could sort them both
     //TODO: Optimize this to get all files first before filtering
-    let GitFiles = executeCommand(`git ls-files`).split('\n').map(s => s.trim()).filter(Boolean);
+    //let GitFiles = executeCommand(`git ls-files`).split('\n').map(s => s.trim()).filter(Boolean);
+    let GitFiles = (await gitLsFiles).split('\n').map(s => s.trim()).filter(Boolean);
 
     files.sort();
     GitFiles.sort();
@@ -67,7 +67,7 @@ function getChangedFiles(hash1: string, hash2: string): string[] {
     return res;
 }
 
-async function setGitLog(): Promise<Map<string, DefaultLogFields>>  {
+async function setGitLogMap(): Promise<Map<string, DefaultLogFields>>  {
 
     const git: SimpleGit = simpleGit(workspacePath);
     const log = await git.log();
@@ -75,65 +75,49 @@ async function setGitLog(): Promise<Map<string, DefaultLogFields>>  {
 
     const map: Map<string, DefaultLogFields> = new Map();
     for (let l of log.all) {
-        map.set(l.message, l);
+        map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
     }
     return map;
 }
 
-async function getHashSet(): Promise<[string[], CommitName, string[]]> {
+export async function getHashSet(): Promise<[string[], hashToMessageMap, string[]]> {
     let branches: string[] = getCommitList();
 
     branches = branches.filter(line => line.trim() !== '');
     const commitHashSet: string[] = [];
-    const commitName: CommitName = {};
-    let files: string[] = [];
+    const hashToMessageMap: hashToMessageMap = {};
+    let filesChanged: string[] = [];
 
     //// setGitLog should finish first
     gitLogMap = await gitLogPromise;
+    debugLog(`gitLogMap finished`);
+    debugLog(`branches: ${branches}`);
 
     //make a branch name to hashSet map
     for (let branch of branches) {
-        branch = `"${branch.replace('[', '\\[').replace(']', '\\]')}"`; //commit name
 
-        const logEntry = gitLogMap.get(branch);
-        //const gitLog = getGitLog(branch).split('\n'); //TODO: Optimize<get all at once>
-
-        //Now I can redo using logEntry...
-
-        //if (gitLog.length > 1 && gitLog[1].includes('Merge:')) {
-        //    const diff = gitLog[1].split(' ');
-        //    const f = getChangedFiles(diff[1], diff[2]); 
-        //    //console.log(`Diff file result: ${f}`);
-        //    files = files.concat(f);
-        //    const fullHash = `"commit ${diff[2]}"`;
-        //    hash = executeCommand(`git log | grep ${fullHash}`).split(' ')[1]; //TODO: Optimize out
-        //    //console.log(`Merged branch: ${branch} -> ${hash}`);
-        //} else {
-        //    for (let l of gitLog) {
-        //        if (l.includes('commit')) {
-        //            hash = l.split(' ')[1];
-        //            const f = getChangedFiles(`${hash}~`, `${hash}`);
-        //            files = files.concat(f);
-        //        }
-        //    }
-        //}
-
-        commitHashSet.push(hash.trim());
-        commitName[hash] = branch;
+        const hash = gitLogMap.get(branch)?.hash;
+        if (hash)
+        {
+            const file = await getChangedFiles(`${hash}~`, `${hash}`); //maybe I should get all first and await lsfiles
+            filesChanged = filesChanged.concat(file);
+            commitHashSet.push(hash.trim());
+            hashToMessageMap[hash] = branch;
+        }
     }
 
-    files = Array.from(new Set(files));
-    vscode.window.showInformationMessage(`Changes found in ${files.length} files`);
-    return [commitHashSet, commitName, files];
+    filesChanged = Array.from(new Set((await filterFiles(filesChanged))));
+    vscode.window.showInformationMessage(`Changes found in ${filesChanged.length} files`);
+    return [commitHashSet, hashToMessageMap, filesChanged];
 }
 
-export default async function compileDiffLog(): Promise<string> {
+export async function compileDiffLog(): Promise<string> {
 
     //Get a set of all the hash values used for commits. Want to avoid calling unless commitList changes
-    const [commitHashSet, commitName, files] = await getHashSet();
+    const [commitHashSet, hashToMessageMap, filesChanged] = await getHashSet();
     const highlights: { [uri: string]: number[] } = {};
     
-    for (let file of files) {
+    for (let file of filesChanged) {
         if (file.trim() === '') {
             continue;
         }
@@ -141,11 +125,12 @@ export default async function compileDiffLog(): Promise<string> {
         highlights[uri] = [];
 
         const blame = executeCommand(`git blame -l ${file}`).trim().split('\n');
+        //const blame = (await git.raw(['blame', '-l', `${file}`])).trim().split('\n');
+        //console.log(blame);
         if (blame.length === 0) {
             continue;
         }
         let index = 0;
-
         while (index < blame.length) {
             const line = blame[index].split(' ')[0].trim();
             if (commitHashSet.includes(line)) {
@@ -163,6 +148,7 @@ export default async function compileDiffLog(): Promise<string> {
             index++;
         }
     }
+    console.log(highlights);
 
     const json = JSON.stringify(highlights, null, 4);
     //fs.writeFileSync(path.join(__dirname, 'highlights.json'), json, 'utf8');
