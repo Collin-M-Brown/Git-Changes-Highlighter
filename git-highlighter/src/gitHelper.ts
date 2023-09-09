@@ -5,9 +5,9 @@ import { getWorkspacePath, getCommitList } from './library';
 import { debugLog } from './library';
 import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
 
-type hashToMessageMap = {
+type HashToMessageMap = {
     [key: string]: string;
-};
+}; 
 
 export class GitProcessor {
     private workspacePath: string;
@@ -15,17 +15,19 @@ export class GitProcessor {
     private gitLsFiles: Promise<string>;
     private gitLogPromise: Promise<Map<string, DefaultLogFields>>;
     private gitLogMap: Map<string, DefaultLogFields>;
+    private jsonPromise: Promise<string>;
+    private filesChanged: string[] = [];
 
     constructor() {
         this.workspacePath = getWorkspacePath();
         this.git = simpleGit(this.workspacePath);
-        console.log("awaiting...");
         this.gitLsFiles = this.git.raw(['ls-files']);
         this.gitLogPromise = this.setGitLogMap();
         this.gitLogMap = new Map();
+        this.jsonPromise = this.compileDiffLog();
     }
 
-    executeCommand(command: string): string {
+    private executeCommand(command: string): string {
         try {
             const output = execSync(`cd ${this.workspacePath} && ${command}`);// maybe cd at start
             const outputString = output.toString();
@@ -39,24 +41,24 @@ export class GitProcessor {
         }
     }
 
-    async getChangedFiles(hash1: string, hash2: string): Promise<string[]> {
+    private async getChangedFiles(hash1: string, hash2: string): Promise<string[]> {
         let files = (await this.git.raw(['diff', '--relative', `${hash1}..${hash2}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
         return files;
     }
 
-    async filterFiles(files: string[]): Promise<string[]> {
-        let GitFiles = (await this.gitLsFiles).split('\n').map(s => s.trim()).filter(Boolean);
+    private async filterFiles(files: string[]): Promise<string[]> {
+        let gitFiles = (await this.gitLsFiles).split('\n').map(s => s.trim()).filter(Boolean);
         files.sort();
-        GitFiles.sort();
+        gitFiles.sort();
 
         let res: string[] = [];
         let i = 0, j = 0;
-        while (i < files.length && j < GitFiles.length) {
-            if (files[i] === GitFiles[j]) {
+        while (i < files.length && j < gitFiles.length) {
+            if (files[i] === gitFiles[j]) {
                 res.push(files[i]);
                 i++;
                 j++;
-            } else if (files[i] < GitFiles[j]) {
+            } else if (files[i] < gitFiles[j]) {
                 i++;
             } else {
                 j++;
@@ -67,7 +69,7 @@ export class GitProcessor {
         return res;
     }
 
-    async setGitLogMap(): Promise<Map<string, DefaultLogFields>> {
+    private async setGitLogMap(): Promise<Map<string, DefaultLogFields>> {
         const log = await this.git.log();
         const map: Map<string, DefaultLogFields> = new Map();
         for (let l of log.all) {
@@ -76,11 +78,11 @@ export class GitProcessor {
         return map;
     }
 
-    async getHashSet(): Promise<[string[], hashToMessageMap, string[]]> {
+    private async getHashSet(): Promise<[string[], HashToMessageMap, string[]]> {
         let branches: string[] = getCommitList();
         branches = branches.filter(line => line.trim() !== '');
         const commitHashSet: string[] = [];
-        const hashToMessageMap: hashToMessageMap = {};
+        const hashToMessageMap: HashToMessageMap = {};
         let filesChanged: string[] = [];
 
         this.gitLogMap = await this.gitLogPromise;
@@ -102,7 +104,8 @@ export class GitProcessor {
         return [commitHashSet, hashToMessageMap, filesChanged];
     }
 
-    async compileDiffLog(): Promise<string> {
+    //The main function that gets the highlights
+    private async compileDiffLog(): Promise<string> {
         const [commitHashSet, hashToMessageMap, filesChanged] = await this.getHashSet();
         const highlights: { [uri: string]: number[] } = {};
 
@@ -111,6 +114,7 @@ export class GitProcessor {
                 continue;
             }
             const uri = vscode.Uri.file(path.join(this.workspacePath, file)).toString();
+            //console.log(`uri: ${uri}, file: ${file}`);
             highlights[uri] = [];
 
             const blame = this.executeCommand(`git blame -l ${file}`).trim().split('\n');
@@ -136,10 +140,17 @@ export class GitProcessor {
                 index++;
             }
         }
-        console.log(highlights);
-
+        //Store results
         const json = JSON.stringify(highlights, null, 4);
-        //fs.writeFileSync(path.join(__dirname, 'highlights.json'), json, 'utf8');
+        this.filesChanged = filesChanged;
         return json;
+    }
+
+    async getJsonHighlights(): Promise<string> {
+        return await this.jsonPromise;
+    }
+
+    getFilesChanged(): string[] {
+        return this.filesChanged;
     }
 }
