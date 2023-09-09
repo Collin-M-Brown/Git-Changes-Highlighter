@@ -7,8 +7,9 @@ import { GitProcessor } from './gitHelper';
 import { FileDataProvider } from './fileTree';
 
 let started = false;
-let diffLog: string;
-let gitObject: GitProcessor = new GitProcessor();
+let diffLog: {[uri: string]: number[]};
+console.log("test   ");
+let gitObject: GitProcessor = new GitProcessor(); //Constructor does most of the work
 
 export async function activate(context: vscode.ExtensionContext) {
     // Check if editor window has changed and load highlights if it has
@@ -33,12 +34,15 @@ export async function activate(context: vscode.ExtensionContext) {
     //git-highlighter: Highlight Commits
     highlightCommits(context, diffLog);
 
+    //git-highlighter: Show current changes
+    //showCurrentChanges(context);
+
     //TreeView
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (workspaceFolders !== undefined) {
         const rootPath = workspaceFolders[0].uri.fsPath;
-        const fileDataProvider = new FileDataProvider(rootPath, gitObject.getFilesChanged());
-        vscode.window.registerTreeDataProvider('yourView', fileDataProvider);
+        const fileDataProvider = new FileDataProvider(rootPath, gitObject.getHighlightFiles());
+        vscode.window.registerTreeDataProvider('gitHighlightsView', fileDataProvider);
     }
     
 }

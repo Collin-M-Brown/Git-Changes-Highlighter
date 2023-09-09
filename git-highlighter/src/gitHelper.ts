@@ -1,3 +1,13 @@
+/*
+Steps:
+Every entry needs a commit message
+commit message maps to hash
+hash is used to get changed files
+changed files are used to get line blame
+line blame is used to get line numbers
+
+*/
+
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { execSync } from 'child_process';
@@ -5,23 +15,18 @@ import { getWorkspacePath, getCommitList } from './library';
 import { debugLog } from './library';
 import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
 
-type HashToMessageMap = {
-    [key: string]: string;
-}; 
-
 export class GitProcessor {
     private workspacePath: string;
     private git: SimpleGit;
-    private gitLsFiles: Promise<string>;
+    //private gitLsFiles: Promise<string>;
     private gitLogPromise: Promise<Map<string, DefaultLogFields>>;
     private gitLogMap: Map<string, DefaultLogFields>;
-    private jsonPromise: Promise<string>;
-    private filesChanged: string[] = [];
+    private jsonPromise: Promise<{[uri: string]: number[]}>;
+    private gitHighlightFiles: Set<string> = new Set();
 
     constructor() {
         this.workspacePath = getWorkspacePath();
         this.git = simpleGit(this.workspacePath);
-        this.gitLsFiles = this.git.raw(['ls-files']);
         this.gitLogPromise = this.setGitLogMap();
         this.gitLogMap = new Map();
         this.jsonPromise = this.compileDiffLog();
@@ -41,32 +46,9 @@ export class GitProcessor {
         }
     }
 
-    private async getChangedFiles(hash1: string, hash2: string): Promise<string[]> {
-        let files = (await this.git.raw(['diff', '--relative', `${hash1}..${hash2}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+    private async getChangedFiles(hash: string): Promise<string[]> {
+        let files = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
         return files;
-    }
-
-    private async filterFiles(files: string[]): Promise<string[]> {
-        let gitFiles = (await this.gitLsFiles).split('\n').map(s => s.trim()).filter(Boolean);
-        files.sort();
-        gitFiles.sort();
-
-        let res: string[] = [];
-        let i = 0, j = 0;
-        while (i < files.length && j < gitFiles.length) {
-            if (files[i] === gitFiles[j]) {
-                res.push(files[i]);
-                i++;
-                j++;
-            } else if (files[i] < gitFiles[j]) {
-                i++;
-            } else {
-                j++;
-            }
-        }
-
-        debugLog(`All Files with changes: ${res}`);
-        return res;
     }
 
     private async setGitLogMap(): Promise<Map<string, DefaultLogFields>> {
@@ -78,79 +60,68 @@ export class GitProcessor {
         return map;
     }
 
-    private async getHashSet(): Promise<[string[], HashToMessageMap, string[]]> {
+    private async getHashSet(): Promise<string[]> {
         let branches: string[] = getCommitList();
         branches = branches.filter(line => line.trim() !== '');
         const commitHashSet: string[] = [];
-        const hashToMessageMap: HashToMessageMap = {};
-        let filesChanged: string[] = [];
-
+        //const hashToMessageMap: HashToMessageMap = {};
         this.gitLogMap = await this.gitLogPromise;
+
         debugLog(`gitLogMap finished`);
         debugLog(`branches: ${branches}`);
 
-        for (let branch of branches) {
+        const filePromises = branches.map(branch => {
             const hash = this.gitLogMap.get(branch)?.hash;
             if (hash) {
-                const file = await this.getChangedFiles(`${hash}~`, `${hash}`);
-                filesChanged = filesChanged.concat(file);
                 commitHashSet.push(hash.trim());
-                hashToMessageMap[hash] = branch;
+                return this.getChangedFiles(`${hash}`);
             }
-        }
-
-        filesChanged = Array.from(new Set((await this.filterFiles(filesChanged))));
-        vscode.window.showInformationMessage(`Changes found in ${filesChanged.length} files`);
-        return [commitHashSet, hashToMessageMap, filesChanged];
+            return Promise.resolve([]);
+        });
+        
+        this.gitHighlightFiles = new Set<string>((await Promise.all(filePromises)).flat());
+        vscode.window.showInformationMessage(`Changes found in ${this.gitHighlightFiles.size} files`);
+        return commitHashSet;
     }
 
     //The main function that gets the highlights
-    private async compileDiffLog(): Promise<string> {
-        const [commitHashSet, hashToMessageMap, filesChanged] = await this.getHashSet();
+    private async compileDiffLog(): Promise<{[uri: string]: number[]}> {
+        const commitHashSet = await this.getHashSet();
         const highlights: { [uri: string]: number[] } = {};
 
-        for (let file of filesChanged) {
+        for (let file of this.gitHighlightFiles) {
+            //check for empty file or empty blame file
             if (file.trim() === '') {
                 continue;
             }
-            const uri = vscode.Uri.file(path.join(this.workspacePath, file)).toString();
-            //console.log(`uri: ${uri}, file: ${file}`);
-            highlights[uri] = [];
-
-            const blame = this.executeCommand(`git blame -l ${file}`).trim().split('\n');
-            if (blame.length === 0) {
+            const blameFile: string[] = this.executeCommand(`git blame -l ${file}`).trim().split('\n');
+            if (blameFile.length === 0) {
                 continue;
             }
-            let index = 0;
-            while (index < blame.length) {
-
-                const line = blame[index].split(' ')[0].trim();
-                if (commitHashSet.includes(line)) {
-                    if (index + 1 < blame.length && commitHashSet.includes(blame[index + 1].split(' ')[0])) {
-                        index++;
-                        while (index + 1 < blame.length && commitHashSet.includes(blame[index + 1].split(' ')[0])) {
-                            highlights[uri].push(index);
-                            index++;
-                        }
-                        highlights[uri].push(index);
-                    } else {
-                        highlights[uri].push(index);
+            const uri = vscode.Uri.file(path.join(this.workspacePath, file)).toString();
+            highlights[uri] = [];
+            for (let lineNumber = 0; lineNumber < blameFile.length; lineNumber++) {
+                let lineHash = blameFile[lineNumber].split(' ')[0].trim();
+                while (lineNumber < blameFile.length && commitHashSet.includes(lineHash)) {
+                    highlights[uri].push(lineNumber);
+                    lineNumber++;
+                    if (lineNumber < blameFile.length) {
+                        lineHash = blameFile[lineNumber].split(' ')[0].trim();
                     }
                 }
-                index++;
             }
         }
+
         //Store results
-        const json = JSON.stringify(highlights, null, 4);
-        this.filesChanged = filesChanged;
-        return json;
+
+        return highlights;
     }
 
-    async getJsonHighlights(): Promise<string> {
+    async getJsonHighlights(): Promise<{[uri: string]: number[]}> {
         return await this.jsonPromise;
     }
 
-    getFilesChanged(): string[] {
-        return this.filesChanged;
+    getHighlightFiles(): Set<string> {
+        return this.gitHighlightFiles;
     }
 }

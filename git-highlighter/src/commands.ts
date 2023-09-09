@@ -23,11 +23,15 @@ let decorationType = vscode.window.createTextEditorDecorationType({
     isWholeLine: true,
 });
 
-function loadHighlights() {
-    if (jsonhighlights.trim() !== "") {
-        highlights = JSON.parse(jsonhighlights);
-    } else {
-        debugLog("File is empty, not attempting to parse");
+function loadHighlights(newHighlights: {[uri: string]: number[]}) {
+    for (const uri in newHighlights) {
+        if (newHighlights.hasOwnProperty(uri)) {
+            const lines = newHighlights[uri];
+            if (!highlights[uri]) {
+                highlights[uri] = [];
+            }
+            highlights[uri].push(...lines);
+        }
     }
 }
 
@@ -37,6 +41,7 @@ export function applyHighlights(document: vscode.TextDocument) {
     if (editor) {
         const uri = document.uri.toString();
         const lines = highlights[uri] || [];
+        console.debug(`Lines: ${lines}`);
         const color = vscode.workspace.getConfiguration('git-highlighter').get('highlightColor');
 
         try {
@@ -86,15 +91,15 @@ export function highlightLine(context: vscode.ExtensionContext) {
     context.subscriptions.push(disposable);
 }
 
-export function highlightCommits(context: vscode.ExtensionContext, diffLog: string) {
+export function highlightCommits(context: vscode.ExtensionContext, diffLog: {[uri: string]: number[]}) {
 
     //TODO: Try to centralize gitHelper await here to break up sync
     debugLog("Registering test command");
     let disposable = vscode.commands.registerCommand('git-highlighter.highlightCommits', () => {
         try {
             //vscode.window.showInformationMessage("Git Highlighter Activated!");
-            jsonhighlights = diffLog; // Run the diff function and write to highlights.json
-            loadHighlights(); // Reload the highlights
+            //jsonhighlights = diffLog; // Run the diff function and write to highlights.json
+            loadHighlights(diffLog); // Reload the highlights
             for (const editor of vscode.window.visibleTextEditors) {
                 applyHighlights(editor.document); // Apply the highlights to all open editors
             }
@@ -105,4 +110,8 @@ export function highlightCommits(context: vscode.ExtensionContext, diffLog: stri
     });
 
     context.subscriptions.push(disposable);
+}
+
+export function showCurrentChanges(context: vscode.ExtensionContext) {
+    
 }
