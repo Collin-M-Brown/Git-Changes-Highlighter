@@ -19,7 +19,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     });
     if (!started) {
-        diffLog = await gitObject.compileDiffLog();
+        diffLog = await gitObject.getJsonHighlights();
         started = true;
     }
     //vscode.window.showInformationMessage("git-highlighter: activated.");
@@ -37,7 +37,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (workspaceFolders !== undefined) {
         const rootPath = workspaceFolders[0].uri.fsPath;
-        const fileDataProvider = new FileDataProvider(rootPath);
+        const fileDataProvider = new FileDataProvider(rootPath, gitObject.getFilesChanged());
         vscode.window.registerTreeDataProvider('yourView', fileDataProvider);
     }
     

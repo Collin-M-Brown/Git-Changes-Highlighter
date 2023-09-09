@@ -94,7 +94,6 @@ export function highlightCommits(context: vscode.ExtensionContext, diffLog: stri
         try {
             //vscode.window.showInformationMessage("Git Highlighter Activated!");
             jsonhighlights = diffLog; // Run the diff function and write to highlights.json
-            //console.log(jsonhighlights);
             loadHighlights(); // Reload the highlights
             for (const editor of vscode.window.visibleTextEditors) {
                 applyHighlights(editor.document); // Apply the highlights to all open editors
