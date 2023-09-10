@@ -64,6 +64,10 @@ export class GitProcessor {
     }
 
     private async getChangedFiles(hash: string): Promise<string[]> {
+        if (hash === '0000000000000000000000000000000000000000')
+        {
+            return (await this.git.raw(['diff','--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+        }
         let files = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
         return files;
     }
