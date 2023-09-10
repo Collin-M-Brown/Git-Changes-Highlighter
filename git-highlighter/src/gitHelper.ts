@@ -145,6 +145,19 @@ export class GitProcessor {
         }
     }
 
+    addCurrentBranch() {
+        const options = {
+            from: 'main',
+            to: 'HEAD',
+            // Custom format options to get just the subject of the commit
+            format: {
+                message: '%s',
+            }
+        };
+        
+        this.git.log(options).then(log => log.all.map(entry => entry.message));
+    }
+
     addCommits(commitList: string[]): void {
         this.fillHashAndFileSet(commitList);
         this.compileDiffLog();

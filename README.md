@@ -3,9 +3,11 @@
 # Git-Changes-Highlighter
 
 # TODO
-* Fix: not including start of line when highlighting ranges
+~~* Fix: not including start of line when highlighting ranges~~
 
-* Add option to show current changes
+~~* Add option to show current changes~~
+
+* add option to highlight just the branch
 
 * start with basic toggle option
 * add right click option to toggle highlights on or off (should save state to prevent reprocessing)

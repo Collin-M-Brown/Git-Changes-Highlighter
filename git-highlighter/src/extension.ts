@@ -34,6 +34,8 @@ export async function activate(context: vscode.ExtensionContext) {
     //git-highlighter: Show current changes
     commandProcessor.highlightCurrent(context);
 
+    commandProcessor.highlightBranch(context);
+
     commandProcessor.treeView(context);
 
 
