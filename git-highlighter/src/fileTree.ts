@@ -6,9 +6,9 @@ class FileTreeItem extends vscode.TreeItem {
     children: { [key: string]: FileTreeItem } | undefined;
 
     constructor(
-        public readonly label: string,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly resourceUri: vscode.Uri,
+        public label: string,
+        public collapsibleState: vscode.TreeItemCollapsibleState,
+        public resourceUri: vscode.Uri,
         children?: { [key: string]: FileTreeItem },
     ) {
         super(label, collapsibleState);
@@ -29,10 +29,12 @@ class FileTreeItem extends vscode.TreeItem {
 export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<FileTreeItem | undefined> = new vscode.EventEmitter<FileTreeItem | undefined>();
     readonly onDidChangeTreeData: vscode.Event<FileTreeItem | undefined> = this._onDidChangeTreeData.event;
+    private collapseState: vscode.TreeItemCollapsibleState;
 
     private fileTree: FileTreeItem | undefined;
 
-    constructor(private workspaceRoot: string, private filesChanged: Set<string>) {
+    constructor(private workspaceRoot: string, private filesChanged: Set<string>, collapseState: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Expanded) {
+        this.collapseState = collapseState;
         this.buildFileTree();
     }
 
@@ -46,20 +48,23 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
         for (let filePath of this.filesChanged) {
             let parts = filePath.split(path.sep);
             let subtree = tree;
+
             for (let i = 0; i < parts.length; i++) {
                 let part = parts[i];
                 if (part in subtree) {
-                    subtree = subtree[part].children || {};
+                    console.log(`attempting to collpase ${this.collapseState}`);
+                    subtree[part].collapsibleState = this.collapseState;
                 } else {
                     let isDirectory = (i < parts.length - 1) || fs.statSync(path.join(this.workspaceRoot, filePath)).isDirectory();
                     let resourceUri = vscode.Uri.file(path.join(this.workspaceRoot, ...parts.slice(0, i + 1)));
-                    subtree[part] = new FileTreeItem(part, isDirectory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None, resourceUri, {});
-                    subtree = subtree[part].children || {};
+                    //console.log(`Tree part: ${part}, resource: ${resourceUri}`);
+                    subtree[part] = new FileTreeItem(part, isDirectory ? this.collapseState : vscode.TreeItemCollapsibleState.None, resourceUri, {});
                 }
+                subtree = subtree[part].children || {};
             }
         }
         let rootLabel = path.basename(this.workspaceRoot);
-        this.fileTree = new FileTreeItem(rootLabel, vscode.TreeItemCollapsibleState.Expanded, vscode.Uri.file(this.workspaceRoot), tree);
+        this.fileTree = new FileTreeItem(rootLabel, this.collapseState, vscode.Uri.file(this.workspaceRoot), tree);
     }
 
     getTreeItem(element: FileTreeItem): vscode.TreeItem {
@@ -72,5 +77,15 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
         } else {
             return Promise.resolve(this.fileTree ? [this.fileTree] : []);
         }
+    }
+
+    collapseAll(): void {
+        this.collapseState = vscode.TreeItemCollapsibleState.Collapsed;
+    }
+
+    updateFiles(newFiles: Set<string>): void {
+        this.filesChanged = newFiles;
+        this.buildFileTree();
+        this._onDidChangeTreeData.fire(undefined);
     }
 }

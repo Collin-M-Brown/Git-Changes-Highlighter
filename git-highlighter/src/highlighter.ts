@@ -46,7 +46,7 @@ export class HighlightProcessor {
                 this.decorationType = vscode.window.createTextEditorDecorationType({
                     backgroundColor: color as string,
                     isWholeLine: true,
-                    overviewRulerColor: color as string,
+                    //overviewRulerColor: color as string,
                 });
             } catch(error) {
                 console.error('Error while creating decoration type:', error);
@@ -62,7 +62,7 @@ export class HighlightProcessor {
         }
     }
 
-    highlightLine(context: vscode.ExtensionContext) {
+    highlightLine() {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const line = editor.selection.active.line;
@@ -81,4 +81,15 @@ export class HighlightProcessor {
             this.applyHighlights(editor.document);
         }
     }
+
+    clearAllHighlights() {
+        this.highlights = {};
+        this.clearHighlights();
+        this.applyHighlights(vscode.window.activeTextEditor?.document as vscode.TextDocument);
+    }
+
+    //clearAllHighlights(context: vscode.ExtensionContext) {
+    //    this.highlights = {};
+    //    this.applyHighlights(vscode.window.activeTextEditor?.document as vscode.TextDocument);
+    //}
 }
