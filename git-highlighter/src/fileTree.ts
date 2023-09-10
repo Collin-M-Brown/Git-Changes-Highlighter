@@ -6,9 +6,9 @@ class FileTreeItem extends vscode.TreeItem {
     children: { [key: string]: FileTreeItem } | undefined;
 
     constructor(
-        public readonly label: string,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly resourceUri: vscode.Uri,
+        public label: string,
+        public collapsibleState: vscode.TreeItemCollapsibleState,
+        public resourceUri: vscode.Uri,
         children?: { [key: string]: FileTreeItem },
     ) {
         super(label, collapsibleState);
@@ -48,17 +48,19 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
         for (let filePath of this.filesChanged) {
             let parts = filePath.split(path.sep);
             let subtree = tree;
+
             for (let i = 0; i < parts.length; i++) {
                 let part = parts[i];
                 if (part in subtree) {
-                    subtree = subtree[part].children || {};
+                    console.log(`attempting to collpase ${this.collapseState}`);
+                    subtree[part].collapsibleState = this.collapseState;
                 } else {
                     let isDirectory = (i < parts.length - 1) || fs.statSync(path.join(this.workspaceRoot, filePath)).isDirectory();
                     let resourceUri = vscode.Uri.file(path.join(this.workspaceRoot, ...parts.slice(0, i + 1)));
                     //console.log(`Tree part: ${part}, resource: ${resourceUri}`);
                     subtree[part] = new FileTreeItem(part, isDirectory ? this.collapseState : vscode.TreeItemCollapsibleState.None, resourceUri, {});
-                    subtree = subtree[part].children || {};
                 }
+                subtree = subtree[part].children || {};
             }
         }
         let rootLabel = path.basename(this.workspaceRoot);
@@ -79,8 +81,6 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
 
     collapseAll(): void {
         this.collapseState = vscode.TreeItemCollapsibleState.Collapsed;
-        this.buildFileTree();
-        this._onDidChangeTreeData.fire(undefined);
     }
 
     updateFiles(newFiles: Set<string>): void {

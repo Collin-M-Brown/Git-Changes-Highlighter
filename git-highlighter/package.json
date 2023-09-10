@@ -18,10 +18,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "git-highlighter.test1",
-        "title": "git-highlighter: test1"
-      },
-      {
         "command": "git-highlighter.highlightLine",
         "title": "git-highlighter: Highlight Line"
       },
@@ -36,6 +32,10 @@
       {
         "command": "git-highlighter.highlightBranch",
         "title": "git-highlighter: Highlight Branch"
+      },
+      {
+        "command": "git-highlighter.clearAll",
+        "title": "git-highlighter: Clear All Highlights"
       },
       {
         "command": "git-highlighter.collapseAll",

@@ -23,7 +23,7 @@ export class GitProcessor {
     private gitLogPromise: Promise<Map<string, DefaultLogFields>>;
     private gitLogMap: Map<string, DefaultLogFields>;
     private gitHighlightData: {[uri: string]: number[]};
-    private gitHighlightFiles: Set<string> = new Set();
+    gitHighlightFiles: Set<string> = new Set();
     private commitHashSet: Set<string> = new Set();
 
     private constructor() {
@@ -123,8 +123,11 @@ export class GitProcessor {
             }
             return Promise.resolve([]);
         });
+
+        //
+        const set =  new Set<string>((await Promise.all(filePromises)).flat());
+        set.forEach(file => this.gitHighlightFiles.add(file));
         
-        this.gitHighlightFiles = new Set<string>((await Promise.all(filePromises)).flat());
         if (DEBUG) {
             console.log(`==Files with changes==`);
             for (let file of this.gitHighlightFiles) {
@@ -154,7 +157,9 @@ export class GitProcessor {
                 continue;
             }
             const uri = vscode.Uri.file(path.join(this.workspacePath, file)).toString();
-            this.gitHighlightData[uri] = [];
+            if (!(uri in this.gitHighlightData)) {
+                this.gitHighlightData[uri] = [];
+            }
             for (let lineNumber = 0; lineNumber < blameFile.length; lineNumber++) {
                 let lineHash = blameFile[lineNumber].split(' ')[0].trim();
                 while (lineNumber < blameFile.length && this.commitHashSet.has(lineHash)) {
@@ -194,9 +199,26 @@ export class GitProcessor {
         return this.gitHighlightFiles;
     }
 
+    putHighlightFiles(newFiles: Set<string>): void {
+        this.gitHighlightFiles = newFiles;
+    }
+
     clearHighlightData() {
         this.gitHighlightData = {};
         this.gitHighlightFiles = new Set();
         this.commitHashSet = new Set();
     }
+
+    //Temp workaround for collapsing tree TODO: fix this
+    private test: Set<string> = new Set();
+    hideFileData() {
+        this.test = new Set(this.gitHighlightFiles);
+        this.gitHighlightFiles = new Set();
+    }
+
+    resetFileData() {
+        this.test.forEach(file => this.gitHighlightFiles.add(file));
+        return this.gitHighlightFiles;
+    }
+
 }
