@@ -9,6 +9,10 @@
 
 ~~* add option to highlight just the branch~~
 
+* Debug async fails on highlights commits and current
+
+* Debug lines not getting added for branches.
+
 * Make each command seperate.
 
 * start with basic toggle option

@@ -12,12 +12,7 @@ export async function activate(context: vscode.ExtensionContext) {
     if (!commandProcessor) {
         commandProcessor = await CommandProcessor.create();
     }
-    
-    vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
-        for (const editor of editors) {
-            commandProcessor.applyHighlights(editor.document);
-        }
-    });
+
 
     // Register the commands
 

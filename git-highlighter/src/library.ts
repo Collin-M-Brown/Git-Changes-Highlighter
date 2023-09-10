@@ -7,6 +7,7 @@ export function debugLog(message: string | undefined) {
     if (DEBUG) {
         console.log(message);
     }
+    console.log(message);
 }
 
 export function getWorkspacePath(): string {
@@ -31,7 +32,7 @@ export function getCommitList(): string[] {
             branches = fs.readFileSync(path.join(getWorkspacePath(), '.vscode/CommitList'), 'utf8').split('\n');
         }
     }
-    debugLog(`branches set: ${branches}`);
+    console.log(`branches set: ${branches}`);
     if (!branches || (branches.length === 0)) {
         vscode.window.showErrorMessage(`No commits found in CommitList: ${branches}`);
         return [];
