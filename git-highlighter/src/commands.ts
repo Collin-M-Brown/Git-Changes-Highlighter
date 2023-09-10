@@ -57,12 +57,13 @@ export class CommandProcessor {
     }
 
     applyHighlights(document: vscode.TextDocument) {
-        debugLog("Applyingthis.highlights in applyHighlights");
+        //debugLog("Applying this.highlights in applyHighlights");
         this.clearHighlights();
         const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
         if (editor) {
             const uri = document.uri.toString();
             const lines =this.highlights[uri] || [];
+            debugLog(`Switched editor: ${uri}`);
             debugLog(`Lines: ${lines}`);
             const color = vscode.workspace.getConfiguration('git-highlighter').get('highlightColor');
 
@@ -88,7 +89,7 @@ export class CommandProcessor {
 
     highlightLine(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('git-highlighter.highlightLine', () => {
-            console.log("COMMAND: highlight:line called");
+            debugLog("Running command: git-highlighter.highlightLine");
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const line = editor.selection.active.line;
@@ -114,9 +115,9 @@ export class CommandProcessor {
     }
 
     highlightCommits(context: vscode.ExtensionContext) {
-        debugLog("Registering test command: git-highlighter.highlightCommits");
         let disposable = vscode.commands.registerCommand('git-highlighter.highlightCommits', () => {
             try {
+                debugLog("Running command: git-highlighter.highlightCommits");
                 //vscode.window.showInformationMessage("Git Highlighter Activated!");
                 //jsonhighlights = diffLog; // Run the diff and write tothis.highlights.json
                 this.loadHighlights(this.gitObject.getJsonHighlights()); // Reload thethis.highlights
@@ -132,9 +133,9 @@ export class CommandProcessor {
     }
 
     highlightCurrent(context: vscode.ExtensionContext) {
-            debugLog("Registering current command: git-highlighter.highlightCurrent");
-            let disposable = vscode.commands.registerCommand('git-highlighter.highlightCurrent', () => {
-                try {
+        let disposable = vscode.commands.registerCommand('git-highlighter.highlightUncommitedChanges', () => {
+            try {
+                    debugLog("Running command: git-highlighter.highlightUncommitedChanges");
                     //vscode.window.showInformationMessage("Git Highlighter Activated!");
                     //jsonhighlights = diffLog; // Run the diff and write tothis.highlights.json
                     this.gitObject.addCommits(["Uncommitted changes"]);
@@ -152,12 +153,13 @@ export class CommandProcessor {
     }
 
     highlightBranch(context: vscode.ExtensionContext) {
-        debugLog("Registering current command: git-highlighter.highlightCurrent");
-        let disposable = vscode.commands.registerCommand('git-highlighter.highlightCurrent', () => {
+        let disposable = vscode.commands.registerCommand('git-highlighter.highlightBranch', () => {
             try {
+                debugLog("Running command: git-highlighter.highlightBranch");
                 //vscode.window.showInformationMessage("Git Highlighter Activated!");
                 //jsonhighlights = diffLog; // Run the diff and write tothis.highlights.json
                 this.gitObject.addCommits(["Uncommitted changes"]);
+                this.gitObject.addCurrentBranch();
                 this.loadHighlights(this.gitObject.getJsonHighlights()); // Reload thethis.highlights
                 for (const editor of vscode.window.visibleTextEditors) {
                     this.applyHighlights(editor.document); // Apply thethis.highlights to all open editors
@@ -169,7 +171,7 @@ export class CommandProcessor {
         });
     
         context.subscriptions.push(disposable);
-}
+    }
 
     treeView(context: vscode.ExtensionContext) {
         //TreeView

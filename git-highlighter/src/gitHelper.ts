@@ -98,7 +98,6 @@ export class GitProcessor {
         //let branches: string[] = getCommitList();
         //commitList = commitList.filter(line => line.trim() !== '');
 
-        debugLog(`gitLogMap finished`);
         debugLog(`branches: ${commitList}`);
 
         const filePromises = commitList.map(commit => {
@@ -120,13 +119,14 @@ export class GitProcessor {
     @this.commitHashSet
     @this.gitHighlightData
     */
-    private compileDiffLog() {
+    private async compileDiffLog() {
         for (let file of this.gitHighlightFiles) {
             //check for empty file or empty blame file
             if (file.trim() === '') {
                 continue;
             }
-            const blameFile: string[] = this.executeCommand(`git blame -l ${file}`).trim().split('\n');
+            //const blameFile: string[] = this.executeCommand(`git blame -l ${file}`).trim().split('\n');
+            const blameFile: string[] = (await this.git.raw(['blame', `-l`, `${file}`])).split('\n').map(s => s.trim()).filter(Boolean);
             if (blameFile.length === 0) {
                 continue;
             }
@@ -145,17 +145,10 @@ export class GitProcessor {
         }
     }
 
-    addCurrentBranch() {
-        const options = {
-            from: 'main',
-            to: 'HEAD',
-            // Custom format options to get just the subject of the commit
-            format: {
-                message: '%s',
-            }
-        };
-        
-        this.git.log(options).then(log => log.all.map(entry => entry.message));
+    async addCurrentBranch(): Promise<void> {
+        let branchCommits = (await this.git.raw(['diff','--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+        debugLog(`branchCommits: ${branchCommits}`);
+        this.addCommits(branchCommits);
     }
 
     addCommits(commitList: string[]): void {

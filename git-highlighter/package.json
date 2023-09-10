@@ -30,8 +30,12 @@
         "title": "git-highlighter: Highlight Commits"
       },
       {
-        "command": "git-highlighter.highlightCurrent",
-        "title": "git-highlighter: Highlight Current Changes"
+        "command": "git-highlighter.highlightUncommitedChanges",
+        "title": "git-highlighter: Highlight Uncommited Changes"
+      },
+      {
+        "command": "git-highlighter.highlightBranch",
+        "title": "git-highlighter: Highlight Branch"
       }
     ],
     "configuration": [

@@ -7,7 +7,9 @@
 
 ~~* Add option to show current changes~~
 
-* add option to highlight just the branch
+~~* add option to highlight just the branch~~
+
+* Make each command seperate.
 
 * start with basic toggle option
 * add right click option to toggle highlights on or off (should save state to prevent reprocessing)
