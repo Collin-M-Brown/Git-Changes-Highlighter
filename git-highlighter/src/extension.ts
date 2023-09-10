@@ -8,32 +8,27 @@ import { CommandProcessor } from './commands';
 let commandProcessor: CommandProcessor;
 
 export async function activate(context: vscode.ExtensionContext) {
-    // Check if editor window has changed and load highlights if it has
-    // Apply the highlights to any editor that becomes visible
+    //Initialize Command Processor
     if (!commandProcessor) {
         commandProcessor = await CommandProcessor.create();
     }
-    
-    vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
-        for (const editor of editors) {
-            commandProcessor.applyHighlights(editor.document);
-        }
-    });
-    //vscode.window.showInformationMessage("git-highlighter: activated.");
 
-    //TODO: add file watcher to update
+
     // Register the commands
-    commandProcessor.highlightCurrent(context);
 
-    //git-highlighter: Highlight Line
+    //highlight current line
     commandProcessor.highlightLine(context);
 
-    //git-highlighter: Highlight Commits
+    //show all commits in commit list
     commandProcessor.highlightCommits(context);
 
-    //git-highlighter: Show current changes
+    //show all uncommited changes
     commandProcessor.highlightCurrent(context);
 
+    //Show all changes in current branch
+    commandProcessor.highlightBranch(context);
+
+    //Display Tree in sidebar view
     commandProcessor.treeView(context);
 
 

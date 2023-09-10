@@ -3,9 +3,17 @@
 # Git-Changes-Highlighter
 
 # TODO
-* Fix: not including start of line when highlighting ranges
+~~* Fix: not including start of line when highlighting ranges~~
 
-* Add option to show current changes
+~~* Add option to show current changes~~
+
+~~* add option to highlight just the branch~~
+
+* Debug async fails on highlights commits and current
+
+* Debug lines not getting added for branches.
+
+* Make each command seperate.
 
 * start with basic toggle option
 * add right click option to toggle highlights on or off (should save state to prevent reprocessing)
@@ -22,3 +30,13 @@
 * add saved highlights per branch
 
 * 
+#Test change 1
+#Test change 1
+#Test change 1
+#Test change 1
+
+#Test change 2
+#Test change 2
+#Test change 2
+#Test change 2
+

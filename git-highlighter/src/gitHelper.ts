@@ -1,4 +1,4 @@
-let test=1;
+
 /*
 Steps:
 Every entry needs a commit message
@@ -13,7 +13,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { getWorkspacePath, getCommitList } from './library';
-import { debugLog } from './library';
+import { debugLog, DEBUG } from './library';
 import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
 
 export class GitProcessor {
@@ -44,32 +44,33 @@ export class GitProcessor {
     {
         // 1. set gitLogMap
         this.gitLogMap = await this.gitLogPromise;
-        //2. need to set all the commit hashes
-        await this.fillHashAndFileSet(getCommitList());
-        this.compileDiffLog();
     }
 
     private executeCommand(command: string): string {
         try {
             const output = execSync(`cd ${this.workspacePath} && ${command}`);// maybe cd at start
             const outputString = output.toString();
-            debugLog(`Completed for command "${command}": ${outputString.length}`);
+            console.log(`Completed for command "${command}": ${outputString.length}`);
             return outputString;
         } catch (error) {
             console.error(`Error executing command "${command}":`); //seems to be trigged by deleted file that has blame in it...
             vscode.window.showErrorMessage(`Error executing command: ${command}`);
-            //process.exit(1);
             return "";
         }
     }
 
     private async getChangedFiles(hash: string): Promise<string[]> {
+        let res: string[];
         if (hash === '0000000000000000000000000000000000000000')
         {
-            return (await this.git.raw(['diff','--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+            res = (await this.git.raw(['diff','--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
         }
-        let files = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
-        return files;
+        else {
+            res = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+        }
+
+        console.log(`Changed files for hash: ${hash}: ${res}`);
+        return res;
     }
 
     private async setGitLogMap(): Promise<Map<string, DefaultLogFields>> {
@@ -81,12 +82,12 @@ export class GitProcessor {
 
         const current: DefaultLogFields = {
             hash: '0000000000000000000000000000000000000000',
-            date: '', // Placeholder value
-            message: '', // Placeholder value
-            author_email: '', // Placeholder value
-            author_name: '', // Placeholder value
-            refs: '', // Added missing property
-            body: '', // Added missing property
+            date: '',
+            message: '',
+            author_email: '',
+            author_name: '',
+            refs: '',
+            body: '',
         };
         map.set('Uncommitted changes', current);
 
@@ -98,8 +99,21 @@ export class GitProcessor {
         //let branches: string[] = getCommitList();
         //commitList = commitList.filter(line => line.trim() !== '');
 
-        debugLog(`gitLogMap finished`);
-        debugLog(`branches: ${commitList}`);
+        if (this.gitLogMap.size === 0) {
+            console.log(`No git log found. Please check that you are in a git repository.`);
+            vscode.window.showErrorMessage(`No git log found. Please check that you are in a git repository.`);
+        }
+
+        if (false) {
+            this.gitLogMap.forEach((value, key) => {
+                console.log(`Key: ${key}, Value: ${value.hash}`);
+                if (key in commitList) {
+                    console.log(`Key: ${key}, Value: ${value.hash}`);
+                }
+            });
+        }
+
+        commitList.forEach(commit => {console.log(`Commit: ${commit}, ${this.gitLogMap.get(commit)?.hash}`);});
 
         const filePromises = commitList.map(commit => {
             const hash = this.gitLogMap.get(commit)?.hash;
@@ -111,6 +125,13 @@ export class GitProcessor {
         });
         
         this.gitHighlightFiles = new Set<string>((await Promise.all(filePromises)).flat());
+        if (DEBUG) {
+            console.log(`==Files with changes==`);
+            for (let file of this.gitHighlightFiles) {
+                console.log(`${file}`);
+            }
+            console.log(`======================`);
+        }
         vscode.window.showInformationMessage(`Changes found in ${this.gitHighlightFiles.size} files`);
     }
 
@@ -120,13 +141,15 @@ export class GitProcessor {
     @this.commitHashSet
     @this.gitHighlightData
     */
-    private compileDiffLog() {
+    private async fillGitHighlightData() {
+
         for (let file of this.gitHighlightFiles) {
             //check for empty file or empty blame file
             if (file.trim() === '') {
                 continue;
             }
-            const blameFile: string[] = this.executeCommand(`git blame -l ${file}`).trim().split('\n');
+            //const blameFile: string[] = this.executeCommand(`git blame -l ${file}`).trim().split('\n');
+            const blameFile: string[] = (await this.git.raw(['blame', `-l`, `${file}`])).split('\n').map(s => s.trim()).filter(Boolean);
             if (blameFile.length === 0) {
                 continue;
             }
@@ -142,15 +165,28 @@ export class GitProcessor {
                     }
                 }
             }
+
+            if (DEBUG) {
+                console.log(`==Highlights for ${file}==`);
+                console.log(`${this.gitHighlightData}`);
+                console.log(`${this.gitHighlightData[uri]}`);
+                console.log(`========================`);
+            }
         }
     }
 
-    addCommits(commitList: string[]): void {
-        this.fillHashAndFileSet(commitList);
-        this.compileDiffLog();
+    async addCurrentBranch(): Promise<void> {
+        let branchCommits = (await this.git.raw(['log','main..HEAD', `--pretty=format:%s`])).split('\n').map(s => s.trim()).filter(Boolean);
+        console.log(`Commits to be added: ${branchCommits}`);
+        await this.addCommits(branchCommits);
     }
 
-    getJsonHighlights(): {[uri: string]: number[]} {
+    async addCommits(commitList: string[]): Promise<void> {
+        await this.fillHashAndFileSet(commitList);
+        await this.fillGitHighlightData();
+    }
+
+    getGitHighlightData(): {[uri: string]: number[]} {
         return this.gitHighlightData;
     }
 
