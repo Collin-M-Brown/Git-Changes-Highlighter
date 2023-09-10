@@ -1,3 +1,4 @@
+let test=1;
 /*
 Steps:
 Every entry needs a commit message
@@ -21,15 +22,31 @@ export class GitProcessor {
     //private gitLsFiles: Promise<string>;
     private gitLogPromise: Promise<Map<string, DefaultLogFields>>;
     private gitLogMap: Map<string, DefaultLogFields>;
-    private jsonPromise: Promise<{[uri: string]: number[]}>;
+    private gitHighlightData: {[uri: string]: number[]};
     private gitHighlightFiles: Set<string> = new Set();
+    private commitHashSet: Set<string> = new Set();
 
-    constructor() {
+    private constructor() {
         this.workspacePath = getWorkspacePath();
         this.git = simpleGit(this.workspacePath);
         this.gitLogPromise = this.setGitLogMap();
         this.gitLogMap = new Map();
-        this.jsonPromise = this.compileDiffLog();
+        this.gitHighlightData = {};
+    }
+
+    static async create() {
+        const processor = new GitProcessor();
+        await processor.setUp();
+        return processor;
+    }
+
+    private async setUp()
+    {
+        // 1. set gitLogMap
+        this.gitLogMap = await this.gitLogPromise;
+        //2. need to set all the commit hashes
+        await this.fillHashAndFileSet(getCommitList());
+        this.compileDiffLog();
     }
 
     private executeCommand(command: string): string {
@@ -57,23 +74,33 @@ export class GitProcessor {
         for (let l of log.all) {
             map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
         }
+
+        const current: DefaultLogFields = {
+            hash: '0000000000000000000000000000000000000000',
+            date: '', // Placeholder value
+            message: '', // Placeholder value
+            author_email: '', // Placeholder value
+            author_name: '', // Placeholder value
+            refs: '', // Added missing property
+            body: '', // Added missing property
+        };
+        map.set('Uncommitted changes', current);
+
         return map;
     }
 
-    private async getHashSet(): Promise<string[]> {
-        let branches: string[] = getCommitList();
-        branches = branches.filter(line => line.trim() !== '');
-        const commitHashSet: string[] = [];
-        //const hashToMessageMap: HashToMessageMap = {};
-        this.gitLogMap = await this.gitLogPromise;
+    //input is a list of commit messages
+    private async fillHashAndFileSet(commitList: string[]) {
+        //let branches: string[] = getCommitList();
+        //commitList = commitList.filter(line => line.trim() !== '');
 
         debugLog(`gitLogMap finished`);
-        debugLog(`branches: ${branches}`);
+        debugLog(`branches: ${commitList}`);
 
-        const filePromises = branches.map(branch => {
-            const hash = this.gitLogMap.get(branch)?.hash;
+        const filePromises = commitList.map(commit => {
+            const hash = this.gitLogMap.get(commit)?.hash;
             if (hash) {
-                commitHashSet.push(hash.trim());
+                this.commitHashSet.add(hash);
                 return this.getChangedFiles(`${hash}`);
             }
             return Promise.resolve([]);
@@ -81,14 +108,15 @@ export class GitProcessor {
         
         this.gitHighlightFiles = new Set<string>((await Promise.all(filePromises)).flat());
         vscode.window.showInformationMessage(`Changes found in ${this.gitHighlightFiles.size} files`);
-        return commitHashSet;
     }
 
     //The main function that gets the highlights
-    private async compileDiffLog(): Promise<{[uri: string]: number[]}> {
-        const commitHashSet = await this.getHashSet();
-        const highlights: { [uri: string]: number[] } = {};
-
+    /*
+    reliant on...
+    @this.commitHashSet
+    @this.gitHighlightData
+    */
+    private compileDiffLog() {
         for (let file of this.gitHighlightFiles) {
             //check for empty file or empty blame file
             if (file.trim() === '') {
@@ -99,11 +127,11 @@ export class GitProcessor {
                 continue;
             }
             const uri = vscode.Uri.file(path.join(this.workspacePath, file)).toString();
-            highlights[uri] = [];
+            this.gitHighlightData[uri] = [];
             for (let lineNumber = 0; lineNumber < blameFile.length; lineNumber++) {
                 let lineHash = blameFile[lineNumber].split(' ')[0].trim();
-                while (lineNumber < blameFile.length && commitHashSet.includes(lineHash)) {
-                    highlights[uri].push(lineNumber);
+                while (lineNumber < blameFile.length && this.commitHashSet.has(lineHash)) {
+                    this.gitHighlightData[uri].push(lineNumber);
                     lineNumber++;
                     if (lineNumber < blameFile.length) {
                         lineHash = blameFile[lineNumber].split(' ')[0].trim();
@@ -111,14 +139,15 @@ export class GitProcessor {
                 }
             }
         }
-
-        //Store results
-
-        return highlights;
     }
 
-    async getJsonHighlights(): Promise<{[uri: string]: number[]}> {
-        return await this.jsonPromise;
+    addCommits(commitList: string[]): void {
+        this.fillHashAndFileSet(commitList);
+        this.compileDiffLog();
+    }
+
+    getJsonHighlights(): {[uri: string]: number[]} {
+        return this.gitHighlightData;
     }
 
     getHighlightFiles(): Set<string> {

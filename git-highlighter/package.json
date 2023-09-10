@@ -30,8 +30,8 @@
         "title": "git-highlighter: Highlight Commits"
       },
       {
-        "command": "git-highlighter.test2",
-        "title": "git-highlighter: test2"
+        "command": "git-highlighter.highlightCurrent",
+        "title": "git-highlighter: Highlight Current Changes"
       }
     ],
     "configuration": [
