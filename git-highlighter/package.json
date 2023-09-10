@@ -30,8 +30,8 @@
         "title": "git-highlighter: Highlight Commits"
       },
       {
-        "command": "git-highlighter.highlightCurrent",
-        "title": "git-highlighter: Highlight Current Changes"
+        "command": "git-highlighter.test2",
+        "title": "git-highlighter: test2"
       }
     ],
     "configuration": [
@@ -62,17 +62,17 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "gitHighlightContainer",
-          "title": "Git Highlights Container",
+          "id": "yourViewContainer",
+          "title": "Your View Container",
           "icon": "$(file-directory)"
         }
       ]
     },
     "views": {
-      "gitHighlightContainer": [
+      "yourViewContainer": [
         {
-          "id": "gitHighlightsView",
-          "name": "Git Highlights View"
+          "id": "yourView",
+          "name": "Your View"
         }
       ]
     }

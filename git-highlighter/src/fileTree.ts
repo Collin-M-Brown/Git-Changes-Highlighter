@@ -32,7 +32,7 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
 
     private fileTree: FileTreeItem | undefined;
 
-    constructor(private workspaceRoot: string, private filesChanged: Set<string>) {
+    constructor(private workspaceRoot: string, private filesChanged: string[]) {
         this.buildFileTree();
     }
 
