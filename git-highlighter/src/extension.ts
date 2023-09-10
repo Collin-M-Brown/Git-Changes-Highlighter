@@ -28,10 +28,12 @@ export async function activate(context: vscode.ExtensionContext) {
     //Show all changes in current branch
     commandProcessor.highlightBranch(context);
 
+    commandProcessor.clearAllHighlights(context);
+
     //Display Tree in sidebar view
-    commandProcessor.treeView(context);
+    commandProcessor.updateTreeFiles(context);
 
-
+    commandProcessor.collapseAll(context);
     
 }
 

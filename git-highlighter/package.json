@@ -36,6 +36,10 @@
       {
         "command": "git-highlighter.highlightBranch",
         "title": "git-highlighter: Highlight Branch"
+      },
+      {
+        "command": "git-highlighter.collapseAll",
+        "title": "Collapse All"
       }
     ],
     "configuration": [
@@ -77,6 +81,15 @@
         {
           "id": "gitHighlightsView",
           "name": "Git Highlights View"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "git-highlighter.collapseAll",
+          "when": "view == gitHighlightsView",
+          "group": "navigation"
         }
       ]
     }

@@ -25,6 +25,7 @@ export class CommandProcessor {
     private highlights: { [uri: string]: number[] };
     private gitObject!: GitProcessor;
     private hp: HighlightProcessor;
+    private fileDataProvider!: FileDataProvider;
 
     private constructor() {
         this.highlights = {};
@@ -46,7 +47,7 @@ export class CommandProcessor {
     highlightLine(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('git-highlighter.highlightLine', () => {
             console.log("Running command: git-highlighter.highlightLine");
-            this.hp.highlightLine(context);
+            this.hp.highlightLine();
         });
         console.log("highlight:line registered");
         context.subscriptions.push(disposable);
@@ -58,11 +59,12 @@ export class CommandProcessor {
                 console.log("Running command: git-highlighter.highlightCommits");
                 {
                     await this.gitObject.addCommits(getCommitList());
-                    console.log(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData());
+                    console.log(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
                 }
-                for (const editor of vscode.window.visibleTextEditors) {
-                    this.hp.applyHighlights(editor.document); // TODO: Fix this loop
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    this.hp.applyHighlights(editor.document);
                 }
                 this.treeView(context);
             } catch (error) {
@@ -78,7 +80,6 @@ export class CommandProcessor {
             try {
                     console.log("Running command: git-highlighter.highlightUncommitedChanges");
                     await this.gitObject.addCommits(["Uncommitted changes"]);
-                    console.log(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData()); 
                     for (const editor of vscode.window.visibleTextEditors) {
                         this.hp.applyHighlights(editor.document);
@@ -99,7 +100,8 @@ export class CommandProcessor {
                 console.log("Running command: git-highlighter.highlightBranch");
                 await this.gitObject.addCurrentBranch();
                 this.hp.loadHighlights(this.gitObject.getGitHighlightData());
-                for (const editor of vscode.window.visibleTextEditors) {
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
                     this.hp.applyHighlights(editor.document);
                 }
                 this.treeView(context);
@@ -112,13 +114,40 @@ export class CommandProcessor {
         context.subscriptions.push(disposable);
     }
 
+    clearAllHighlights(context: vscode.ExtensionContext) {
+        let disposable = vscode.commands.registerCommand('git-highlighter.clearAll', () => {
+            console.log("Running command: git-highlighter.clearAll");
+            this.gitObject.clearHighlightData();
+            this.hp.clearAllHighlights();
+            this.treeView(context);
+        });
+        context.subscriptions.push(disposable);
+    }
+
     treeView(context: vscode.ExtensionContext) {
         //TreeView
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (workspaceFolders !== undefined) {
+            console.log(`treeView`);
             const rootPath = workspaceFolders[0].uri.fsPath;
-            const fileDataProvider = new FileDataProvider(rootPath, this.gitObject.getHighlightFiles());
+            const fileDataProvider = new FileDataProvider(rootPath, this.gitObject.getHighlightFiles(), 2);
             vscode.window.registerTreeDataProvider('gitHighlightsView', fileDataProvider);
         }
+    }
+
+    collapseAll(context: vscode.ExtensionContext) {
+        let disposable = vscode.commands.registerCommand('git-highlighter.collapseAll', () => {
+            console.log("Running command: git-highlighter.collapseAll");
+            if (this.fileDataProvider) {
+                const workspaceFolders = vscode.workspace.workspaceFolders;
+                if (workspaceFolders !== undefined) {
+                    const rootPath = workspaceFolders[0].uri.fsPath;
+                    this.fileDataProvider = new FileDataProvider(rootPath, this.gitObject.getHighlightFiles(), 1);
+                    vscode.window.registerTreeDataProvider('gitHighlightsView', this.fileDataProvider);
+                }
+            }
+        });
+
+        context.subscriptions.push(disposable);
     }
 }

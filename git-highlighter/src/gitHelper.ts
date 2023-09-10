@@ -193,4 +193,10 @@ export class GitProcessor {
     getHighlightFiles(): Set<string> {
         return this.gitHighlightFiles;
     }
+
+    clearHighlightData() {
+        this.gitHighlightData = {};
+        this.gitHighlightFiles = new Set();
+        this.commitHashSet = new Set();
+    }
 }
