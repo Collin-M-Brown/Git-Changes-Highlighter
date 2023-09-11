@@ -1,2 +1,3 @@
 git-highlighter/dist/*
 git-highlighter/node_modules/*
+git-highlighter/*.vsix
