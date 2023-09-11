@@ -11,7 +11,7 @@ export function debugLog(message: string | undefined) {
 }
 
 export function getWorkspacePath(): string {
-    let configuredPath = vscode.workspace.getConfiguration('git-highlighter').get<string>('commitListPath'); //TODO: DOUBLE CHECK THIS, MIGHT HAVE DEPRECATED
+    let configuredPath = vscode.workspace.getConfiguration('gmap').get<string>('commitListPath'); //TODO: DOUBLE CHECK THIS, MIGHT HAVE DEPRECATED
     if (!configuredPath || (configuredPath === "")) {
         if (!vscode.workspace.workspaceFolders) {
             vscode.window.showErrorMessage(`No path configured or no workspace open`);
@@ -25,7 +25,7 @@ export function getWorkspacePath(): string {
 
 export function getCommitList(): string[] {
 
-    let branches = vscode.workspace.getConfiguration('git-highlighter').get<string[]>('highlightList');
+    let branches = vscode.workspace.getConfiguration('gmap').get<string[]>('highlightList');
     if (!branches || (branches.length === 0)) {
         let commitListPath = path.join(getWorkspacePath(), '.vscode/CommitList');
         if (fs.existsSync(commitListPath)) {

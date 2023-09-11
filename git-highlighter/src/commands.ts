@@ -11,11 +11,11 @@ import { HighlightProcessor } from './highlighter';
 Example format ofthis.highlights.json:
 TODO: Add these files to watchlist and update when changed
 {
-    "file:///Users/cb/Git/Git-Changes-Highlighter/git-highlighter/src/extension.ts": [
+    "file:///Users/cb/Git/Git-Changes-Highlighter/gmap/src/extension.ts": [
         15,
         22,
     ],
-    "file:///Users/cb/Git/Git-Changes-Highlighter/git-highlighter/src/gitHelper.ts": [
+    "file:///Users/cb/Git/Git-Changes-Highlighter/gmap/src/gitHelper.ts": [
         ...,
     ]
 }*/
@@ -52,8 +52,8 @@ export class CommandProcessor {
     }
 
     highlightLine(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('git-highlighter.highlightLine', () => {
-            console.log("Running command: git-highlighter.highlightLine");
+        let disposable = vscode.commands.registerCommand('gmap.highlightLine', () => {
+            console.log("Running command: gmap.highlightLine");
             this.hp.highlightLine();
         });
         console.log("highlight:line registered");
@@ -61,9 +61,9 @@ export class CommandProcessor {
     }
 
     highlightCommits(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('git-highlighter.highlightCommits', async () => {
+        let disposable = vscode.commands.registerCommand('gmap.highlightCommits', async () => {
             try {
-                console.log("Running command: git-highlighter.highlightCommits");
+                console.log("Running command: gmap.highlightCommits");
                 {
                     await this.gitObject.addCommits(getCommitList());
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData());
@@ -83,9 +83,9 @@ export class CommandProcessor {
     }
 
     highlightCurrent(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('git-highlighter.highlightUncommitedChanges', async () => {
+        let disposable = vscode.commands.registerCommand('gmap.highlightUncommitedChanges', async () => {
             try {
-                    console.log("Running command: git-highlighter.highlightUncommitedChanges");
+                    console.log("Running command: gmap.highlightUncommitedChanges");
                     await this.gitObject.addCommits(["Uncommitted changes"]);
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData()); 
                     for (const editor of vscode.window.visibleTextEditors) {
@@ -102,9 +102,9 @@ export class CommandProcessor {
     }
 
     highlightBranch(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('git-highlighter.highlightBranch', async () => {
+        let disposable = vscode.commands.registerCommand('gmap.highlightBranch', async () => {
             try {
-                console.log("Running command: git-highlighter.highlightBranch");
+                console.log("Running command: gmap.highlightBranch");
                 await this.gitObject.addCurrentBranch();
                 this.hp.loadHighlights(this.gitObject.getGitHighlightData());
                 const editor = vscode.window.activeTextEditor;
@@ -122,8 +122,8 @@ export class CommandProcessor {
     }
 
     clearAllHighlights(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('git-highlighter.clearAll', () => {
-            console.log("Running command: git-highlighter.clearAll");
+        let disposable = vscode.commands.registerCommand('gmap.clearAll', () => {
+            console.log("Running command: gmap.clearAll");
             this.gitObject.clearHighlightData();
             this.hp.clearAllHighlights();
             this.updateTreeFiles(context);
@@ -138,8 +138,8 @@ export class CommandProcessor {
     }
 
     collapseAll(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('git-highlighter.collapseAll', async () => {
-            console.log("Running command: git-highlighter.collapseAll");
+        let disposable = vscode.commands.registerCommand('gmap.collapseAll', async () => {
+            console.log("Running command: gmap.collapseAll");
             if (this.fileDataProvider) {
                 this.fileDataProvider.collapseAll();
                 if (this.fileDataProvider) {

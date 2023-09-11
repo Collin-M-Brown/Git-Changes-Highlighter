@@ -1,9 +1,9 @@
 {
   "repository": {
     "type": "git",
-    "url": "https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/git-highlighter"
+    "url": "https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/gmap"
   },
-  "name": "git-highlighter",
+  "name": "gmap",
   "displayName": "Git Highlighter",
   "description": "",
   "version": "0.0.1",
@@ -18,27 +18,27 @@
   "contributes": {
     "commands": [
       {
-        "command": "git-highlighter.highlightLine",
-        "title": "git-highlighter: Highlight Line"
+        "command": "gmap.highlightLine",
+        "title": "gmap: Highlight Line"
       },
       {
-        "command": "git-highlighter.highlightCommits",
-        "title": "git-highlighter: Highlight Commits"
+        "command": "gmap.highlightCommits",
+        "title": "gmap: Highlight Commits"
       },
       {
-        "command": "git-highlighter.highlightUncommitedChanges",
-        "title": "git-highlighter: Highlight Uncommited Changes"
+        "command": "gmap.highlightUncommitedChanges",
+        "title": "gmap: Highlight Uncommited Changes"
       },
       {
-        "command": "git-highlighter.highlightBranch",
-        "title": "git-highlighter: Highlight Branch"
+        "command": "gmap.highlightBranch",
+        "title": "gmap: Highlight Branch"
       },
       {
-        "command": "git-highlighter.clearAll",
-        "title": "git-highlighter: Clear All Highlights"
+        "command": "gmap.clearAll",
+        "title": "gmap: Clear All Highlights"
       },
       {
-        "command": "git-highlighter.collapseAll",
+        "command": "gmap.collapseAll",
         "title": "Collapse All"
       }
     ],
@@ -46,17 +46,17 @@
       {
         "title": "Git Highlighter",
         "properties": {
-          "git-highlighter.highlightColor": {
+          "gmap.highlightColor": {
             "type": "string",
             "default": "#2259b27e",
             "description": "The color to use for highlights"
           },
-          "git-highlighter.commitListPath": {
+          "gmap.commitListPath": {
             "type": "string",
             "default": null,
             "description": "The path where the commit names are stored"
           },
-          "git-highlighter.highlightList": {
+          "gmap.highlightList": {
             "type": "array",
             "default": [],
             "description": "The commits you wish to highlight",
@@ -87,9 +87,15 @@
     "menus": {
       "view/title": [
         {
-          "command": "git-highlighter.collapseAll",
+          "command": "gmap.collapseAll",
           "when": "view == gitHighlightsView",
           "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "extension.myCommand",
+          "group": "z_commands"
         }
       ]
     }

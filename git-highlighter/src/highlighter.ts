@@ -39,7 +39,7 @@ export class HighlightProcessor {
             const lines =this.highlights[uri] || [];
             console.log(`Switched editor: ${uri}`);
             console.log(`Lines: ${lines}`);
-            const color = vscode.workspace.getConfiguration('git-highlighter').get('highlightColor');
+            const color = vscode.workspace.getConfiguration('gmap').get('highlightColor');
 
             try {
                 this.decorationType.dispose(); 
