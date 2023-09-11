@@ -1,11 +1,9 @@
-# git-highlighter README
+# GitVision Alpha
+## Purpose
+This extension aims to provide visiual aid for viewing past commits and branches merged when in a git repository. It is specifically designed for large collaborative repositories.
+For an example; if you have multiple commits for a single feature merged to the repository, and you wish to view all the changes you have made on that feature, you can simply add all the relevant commits to a list, and then this extension will highlight all the lines that were changed in those commits.
 
-Temp
-
-## Features
-
-Temp
-
+This extension serves a similar purpose to a git heatmap but allows for tracking multiple different commits at once
 ## Requirements
 
 Temp
