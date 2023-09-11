@@ -1,132 +1,162 @@
 {
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/gmap"
-  },
-  "name": "gmap",
-  "displayName": "Git Highlighter",
-  "description": "",
-  "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.81.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "gmap.highlightLine",
-        "title": "gmap: Highlight Line"
-      },
-      {
-        "command": "gmap.highlightCommits",
-        "title": "gmap: Highlight Commits"
-      },
-      {
-        "command": "gmap.highlightUncommitedChanges",
-        "title": "gmap: Highlight Uncommited Changes"
-      },
-      {
-        "command": "gmap.highlightBranch",
-        "title": "gmap: Highlight Branch"
-      },
-      {
-        "command": "gmap.clearAll",
-        "title": "gmap: Clear All Highlights"
-      },
-      {
-        "command": "gmap.collapseAll",
-        "title": "Collapse All"
-      }
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/gmap"
+    },
+    "name": "gmap",
+    "displayName": "Git Highlighter",
+    "description": "",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.81.0"
+    },
+    "categories": [
+        "Other"
     ],
-    "configuration": [
-      {
-        "title": "Git Highlighter",
-        "properties": {
-          "gmap.highlightColor": {
-            "type": "string",
-            "default": "#2259b27e",
-            "description": "The color to use for highlights"
-          },
-          "gmap.commitListPath": {
-            "type": "string",
-            "default": null,
-            "description": "The path where the commit names are stored"
-          },
-          "gmap.highlightList": {
-            "type": "array",
-            "default": [],
-            "description": "The commits you wish to highlight",
-            "items": {
-              "type": "string"
+    "activationEvents": [],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "gmap.highlightLine",
+                "title": "gmap: Highlight Line"
+            },
+            {
+                "command": "gmap.highlightCommits",
+                "title": "gmap: Highlight From List"
+            },
+            {
+                "command": "gmap.highlightUncommitedChanges",
+                "title": "gmap: Highlight Uncommited Changes"
+            },
+            {
+                "command": "gmap.highlightBranch",
+                "title": "gmap: Highlight Current Branch"
+            },
+            {
+                "command": "gmap.clearAll",
+                "title": "gmap: Clear All Highlights"
+            },
+            {
+                "command": "gmap.testCommit",
+                "title": "test1"
+            },
+            {
+                "command": "gmap.collapseAll",
+                "title": "min",
+                "icon": {
+                    "light": "./images/black_minus.svg",
+                    "dark": "./images/white_minus.svg"
+                }
+            },
+            {
+                "command": "gmap.expandAll",
+                "title": "max",
+                "icon": {
+                    "light": "./images/black_plus.svg",
+                    "dark": "./images/white_plus.svg"
+                }
             }
-          }
-        }
-      }
-    ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "gitHighlightContainer",
-          "title": "Git Highlights Container",
-          "icon": "$(file-directory)"
-        }
-      ]
+        ],
+        "configuration": [
+            {
+                "title": "Git Highlighter",
+                "properties": {
+                    "gmap.highlightColor": {
+                        "type": "string",
+                        "default": "#2259b27e",
+                        "description": "The color to use for highlights"
+                    },
+                    "gmap.commitListPath": {
+                        "type": "string",
+                        "default": null,
+                        "description": "The path where the commit names are stored"
+                    },
+                    "gmap.highlightList": {
+                        "type": "array",
+                        "default": [],
+                        "description": "The commits you wish to highlight",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "TreeView",
+                    "title": "Tree View",
+                    "icon": "$(file-directory)"
+                }
+            ]
+        },
+        "views": {
+            "TreeView": [
+                {
+                    "id": "gitHighlightsView",
+                    "name": "Files with changes"
+                },
+                {
+                    "id": "CommitView",
+                    "name": "Commit Watch List"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "gmap.collapseAll",
+                    "when": "view == gitHighlightsView",
+                    "group": "navigation"
+                },
+                {
+                    "command": "gmap.expandAll",
+                    "when": "view == gitHighlightsView",
+                    "group": "navigation"
+                },
+                {
+                    "command": "gmap.expandAll",
+                    "when": "view == CommitView",
+                    "group": "navigation"
+                }
+            ]
+        },
+        "view/item/context": [
+            {
+                "command": "gmap.testCommit",
+                "when": "view == CommitView"
+            }
+        ]
     },
-    "views": {
-      "gitHighlightContainer": [
-        {
-          "id": "gitHighlightsView",
-          "name": "Git Highlights View"
-        }
-      ]
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "webpack",
+        "watch": "webpack --watch",
+        "package": "webpack --mode production --devtool hidden-source-map",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
     },
-    "menus": {
-      "view/title": [
-        {
-          "command": "gmap.collapseAll",
-          "when": "view == gitHighlightsView",
-          "group": "navigation"
-        }
-      ],
-      "editor/context": [
-        {
-          "command": "extension.myCommand",
-          "group": "z_commands"
-        }
-      ]
+    "devDependencies": {
+        "@types/mocha": "^10.0.1",
+        "@types/node": "16.x",
+        "@types/vscode": "^1.81.0",
+        "@typescript-eslint/eslint-plugin": "^6.4.1",
+        "@typescript-eslint/parser": "^6.4.1",
+        "@vscode/test-electron": "^2.3.4",
+        "eslint": "^8.47.0",
+        "glob": "^10.3.3",
+        "mocha": "^10.2.0",
+        "ts-loader": "^9.4.4",
+        "typescript": "^5.1.6",
+        "webpack": "^5.88.2",
+        "webpack-cli": "^5.1.4"
+    },
+    "dependencies": {
+        "simple-git": "^3.19.1"
     }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.1",
-    "@types/node": "16.x",
-    "@types/vscode": "^1.81.0",
-    "@typescript-eslint/eslint-plugin": "^6.4.1",
-    "@typescript-eslint/parser": "^6.4.1",
-    "@vscode/test-electron": "^2.3.4",
-    "eslint": "^8.47.0",
-    "glob": "^10.3.3",
-    "mocha": "^10.2.0",
-    "ts-loader": "^9.4.4",
-    "typescript": "^5.1.6",
-    "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4"
-  },
-  "dependencies": {
-    "simple-git": "^3.19.1"
-  }
 }

@@ -6,8 +6,13 @@ export const DEBUG = true;
 export function debugLog(message: string | undefined) {
     if (DEBUG) {
         console.log(message);
+        //const wspath = getWorkspacePath();
+        //const filePath = wspath + "/logOutput.txt";
+        //console.log("hi")
+        //const data = 'Hello, world!';
+        //fs.writeFileSync(filePath, data);
     }
-    console.log(message);
+    //console.log(message);
 }
 
 export function getWorkspacePath(): string {
@@ -19,7 +24,7 @@ export function getWorkspacePath(): string {
         }
         configuredPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
     }
-    console.log(`Workspace path: ${configuredPath}`);
+    debugLog(`Workspace path: ${configuredPath}`);
     return configuredPath;
 }
 
@@ -32,7 +37,7 @@ export function getCommitList(): string[] {
             branches = fs.readFileSync(path.join(getWorkspacePath(), '.vscode/CommitList'), 'utf8').split('\n');
         }
     }
-    console.log(`branches set: ${branches}`);
+    debugLog(`branches set: ${branches}`);
     if (!branches || (branches.length === 0)) {
         vscode.window.showErrorMessage(`No commits found in CommitList: ${branches}`);
         return [];

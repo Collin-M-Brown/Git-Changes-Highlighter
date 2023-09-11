@@ -5,6 +5,7 @@ import { GitProcessor } from './gitHelper';
 import { FileDataProvider } from './fileTree';
 import { getWorkspacePath, getCommitList } from './library';
 import { HighlightProcessor } from './highlighter';
+import { CommitListViewProvider, Commit } from './commitView'
 //import { fillGitHighlightData } from './gitHelper';
 
 /*
@@ -31,7 +32,7 @@ export class CommandProcessor {
         this.highlights = {};
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (workspaceFolders !== undefined) {
-            this.fileDataProvider = new FileDataProvider(workspaceFolders[0].uri.fsPath, new Set<string>, 2);
+            this.fileDataProvider = new FileDataProvider(workspaceFolders[0].uri.fsPath, new Set<string>);
             vscode.window.registerTreeDataProvider('gitHighlightsView', this.fileDataProvider);
         }
         else {
@@ -139,13 +140,18 @@ export class CommandProcessor {
 
     collapseAll(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('gmap.collapseAll', async () => {
-            console.log("Running command: gmap.collapseAll");
+            vscode.commands.executeCommand('workbench.actions.treeView.gitHighlightsView.collapseAll');
+        });
+        context.subscriptions.push(disposable);
+    }
+
+    expandAll(context: vscode.ExtensionContext) {
+        let disposable = vscode.commands.registerCommand('gmap.expandAll', async () => {
+            console.log("Running command: gmap.expandAll");
             if (this.fileDataProvider) {
-                this.fileDataProvider.collapseAll();
-                if (this.fileDataProvider) {
-                    this.fileDataProvider.updateFiles(new Set<string>());
-                }
-    
+                //this.fileDataProvider.expandAll();
+                this.fileDataProvider.updateFiles(new Set<string>());
+                
                 // Add a delay before adding the highlight data back
                 setTimeout(() => {
                     this.updateTreeFiles(context);

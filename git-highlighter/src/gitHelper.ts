@@ -50,7 +50,7 @@ export class GitProcessor {
         try {
             const output = execSync(`cd ${this.workspacePath} && ${command}`);// maybe cd at start
             const outputString = output.toString();
-            console.log(`Completed for command "${command}": ${outputString.length}`);
+            debugLog(`Completed for command "${command}": ${outputString.length}`);
             return outputString;
         } catch (error) {
             console.error(`Error executing command "${command}":`); //seems to be trigged by deleted file that has blame in it...
@@ -69,7 +69,7 @@ export class GitProcessor {
             res = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
         }
 
-        console.log(`Changed files for hash: ${hash}: ${res}`);
+        debugLog(`Changed files for hash: ${hash}: ${res}`);
         return res;
     }
 
@@ -100,20 +100,20 @@ export class GitProcessor {
         //commitList = commitList.filter(line => line.trim() !== '');
 
         if (this.gitLogMap.size === 0) {
-            console.log(`No git log found. Please check that you are in a git repository.`);
+            debugLog(`No git log found. Please check that you are in a git repository.`);
             vscode.window.showErrorMessage(`No git log found. Please check that you are in a git repository.`);
         }
 
         if (false) {
             this.gitLogMap.forEach((value, key) => {
-                console.log(`Key: ${key}, Value: ${value.hash}`);
+                debugLog(`Key: ${key}, Value: ${value.hash}`);
                 if (key in commitList) {
-                    console.log(`Key: ${key}, Value: ${value.hash}`);
+                    debugLog(`Key: ${key}, Value: ${value.hash}`);
                 }
             });
         }
 
-        commitList.forEach(commit => {console.log(`Commit: ${commit}, ${this.gitLogMap.get(commit)?.hash}`);});
+        commitList.forEach(commit => {debugLog(`Commit: ${commit}, ${this.gitLogMap.get(commit)?.hash}`);});
 
         const filePromises = commitList.map(commit => {
             const hash = this.gitLogMap.get(commit)?.hash;
@@ -129,11 +129,11 @@ export class GitProcessor {
         set.forEach(file => this.gitHighlightFiles.add(file));
         
         if (DEBUG) {
-            console.log(`==Files with changes==`);
+            debugLog(`==Files with changes==`);
             for (let file of this.gitHighlightFiles) {
-                console.log(`${file}`);
+                debugLog(`${file}`);
             }
-            console.log(`======================`);
+            debugLog(`======================`);
         }
         vscode.window.showInformationMessage(`Changes found in ${this.gitHighlightFiles.size} files`);
     }
@@ -172,17 +172,17 @@ export class GitProcessor {
             }
 
             if (DEBUG) {
-                console.log(`==Highlights for ${file}==`);
-                console.log(`${this.gitHighlightData}`);
-                console.log(`${this.gitHighlightData[uri]}`);
-                console.log(`========================`);
+                debugLog(`==Highlights for ${file}==`);
+                debugLog(`${this.gitHighlightData}`);
+                debugLog(`${this.gitHighlightData[uri]}`);
+                debugLog(`========================`);
             }
         }
     }
 
     async addCurrentBranch(): Promise<void> {
         let branchCommits = (await this.git.raw(['log','main..HEAD', `--pretty=format:%s`])).split('\n').map(s => s.trim()).filter(Boolean);
-        console.log(`Commits to be added: ${branchCommits}`);
+        debugLog(`Commits to be added: ${branchCommits}`);
         await this.addCommits(branchCommits);
     }
 
@@ -209,16 +209,13 @@ export class GitProcessor {
         this.commitHashSet = new Set();
     }
 
-    //Temp workaround for collapsing tree TODO: fix this
-    private test: Set<string> = new Set();
-    hideFileData() {
-        this.test = new Set(this.gitHighlightFiles);
-        this.gitHighlightFiles = new Set();
+    saveState(context: vscode.ExtensionContext) {
+        //look into this for maintaining state
+        let count = context.globalState.get<number>('count');
+        if (count === undefined) {
+            count = 0;
+        }
+        console.log(`Count is ${count}`);
+        context.globalState.update('count', count + 1);
     }
-
-    resetFileData() {
-        this.test.forEach(file => this.gitHighlightFiles.add(file));
-        return this.gitHighlightFiles;
-    }
-
 }
