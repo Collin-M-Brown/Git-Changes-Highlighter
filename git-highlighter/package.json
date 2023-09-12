@@ -101,6 +101,10 @@
                 {
                     "id": "CommitView",
                     "name": "Commit Watch List"
+                },
+                {
+                    "id": "CommitRepo",
+                    "name": "Commit Repository"
                 }
             ]
         },

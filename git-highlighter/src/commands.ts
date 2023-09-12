@@ -29,7 +29,9 @@ export class CommandProcessor {
     private hp: HighlightProcessor;
     private fileDataProvider!: FileDataProvider;
     private commitView: CommitListViewProvider;
-    private treeView: vscode.TreeView<Commit>;
+    private commitRepo: CommitListViewProvider;
+    private commitViewDropdown: vscode.TreeView<Commit>;
+    private commitRepoDropdown: vscode.TreeView<Commit>;
 
     private constructor(context: vscode.ExtensionContext) {
         this.highlights = {};
@@ -44,16 +46,19 @@ export class CommandProcessor {
 
         this.hp = new HighlightProcessor();
         this.commitView = new CommitListViewProvider();
-        this.treeView = vscode.window.createTreeView('CommitView', { treeDataProvider: this.commitView});
-        //this.commitView.loadCommits(this.gitObject.getCommitList());
-        // Save reference to treeView for later
-        context.subscriptions.push(this.treeView);
+        this.commitRepo = new CommitListViewProvider();
+        this.commitViewDropdown = vscode.window.createTreeView('CommitView', { treeDataProvider: this.commitView});
+        this.commitRepoDropdown = vscode.window.createTreeView('CommitRepo', { treeDataProvider: this.commitRepo});
+        //this.
+
+        context.subscriptions.push(this.commitViewDropdown);
+        context.subscriptions.push(this.commitRepoDropdown);
     }
 
     static async create(context: vscode.ExtensionContext) {
         const commandProcessor = new CommandProcessor(context);
         commandProcessor.gitObject = await GitProcessor.create();
-        commandProcessor.commitView.loadCommits(commandProcessor.gitObject.getCommitList());
+        commandProcessor.commitRepo.loadCommits(commandProcessor.gitObject.getCommitList());
         vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
             for (const editor of editors) {
                 commandProcessor.hp.applyHighlights(editor.document);
@@ -64,21 +69,21 @@ export class CommandProcessor {
 
     highlightLine(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('gmap.highlightLine', () => {
-            console.log("Running command: gmap.highlightLine");
+            debugLog("Running command: gmap.highlightLine");
             this.hp.highlightLine();
         });
-        console.log("highlight:line registered");
+        debugLog("highlight:line registered");
         context.subscriptions.push(disposable);
     }
 
     highlightCommits(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('gmap.highlightCommits', async () => {
             try {
-                console.log("Running command: gmap.highlightCommits");
+                debugLog("Running command: gmap.highlightCommits");
                 {
-                    await this.gitObject.addCommits(getCommitList()); //give commits to gitHelper to parse
+                    await this.gitObject.addCommits(this.commitView.getCommits()); //give commits to gitHelper to parse
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData()); //load data to be highlighted
-                    debugLog(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
+                    //debugLog(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
                 }
                 const editor = vscode.window.activeTextEditor;
                 if (editor) {
@@ -96,8 +101,8 @@ export class CommandProcessor {
     highlightCurrent(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('gmap.highlightUncommitedChanges', async () => {
             try {
-                    console.log("Running command: gmap.highlightUncommitedChanges");
-                    await this.gitObject.addCommits(["Uncommitted changes"]);
+                    debugLog("Running command: gmap.highlightUncommitedChanges");
+                    //await this.gitObject.addCommits(["Uncommitted changes"]); TODOFIX
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData()); 
                     for (const editor of vscode.window.visibleTextEditors) {
                         this.hp.applyHighlights(editor.document);
@@ -115,7 +120,7 @@ export class CommandProcessor {
     highlightBranch(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('gmap.highlightBranch', async () => {
             try {
-                console.log("Running command: gmap.highlightBranch");
+                debugLog("Running command: gmap.highlightBranch");
                 await this.gitObject.addCurrentBranch();
                 this.hp.loadHighlights(this.gitObject.getGitHighlightData());
                 const editor = vscode.window.activeTextEditor;
@@ -134,7 +139,7 @@ export class CommandProcessor {
 
     clearAllHighlights(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('gmap.clearAll', () => {
-            console.log("Running command: gmap.clearAll");
+            debugLog("Running command: gmap.clearAll");
             this.gitObject.clearHighlightData();
             this.hp.clearAllHighlights();
             this.updateTreeFiles(context);
@@ -157,7 +162,7 @@ export class CommandProcessor {
 
     expandAll(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('gmap.expandAll', async () => {
-            console.log("Running command: gmap.expandAll");
+            debugLog("Running command: gmap.expandAll");
             if (this.fileDataProvider) {
                 //this.fileDataProvider.expandAll();
                 this.fileDataProvider.updateFiles(new Set<string>());
@@ -174,22 +179,23 @@ export class CommandProcessor {
     addCommit(context: vscode.ExtensionContext) {
         let found = false;
         let commits: Commit[] = [];
-        this.treeView.onDidChangeSelection(e => {
-            debugLog("hi");
+        this.commitRepoDropdown.onDidChangeSelection(e => {
+            //debugLog("hi");
             if (e.selection.length > 0) {
                 if (!found) {
                     const item = e.selection[0] as Commit;
                     //vscode.window.showInformationMessage(`You clicked on commit: ${item.commitMessage}`);
                     debugLog(`You clicked on commit: ${item.commitMessage}`);
                     // Remove the selected commit from the commits array
-                    commits = this.commitView.getcommits().filter(c => c.commitMessage !== item.commitMessage);
-                    this.commitView.clear();
+                    commits = this.commitRepo.getCommits().filter(c => c.commitMessage !== item.commitMessage);
+                    this.commitView.addCommit(item);
+                    this.commitRepo.clear();
                     found = true;
                 }
             }
             else {
-                console.log(`loading commits ${commits}`);
-                this.commitView.loadCommits(commits);
+                //debugLog(`loading commits ${commits}`);
+                this.commitRepo.loadCommits(commits);
                 found = false;
             }
         });

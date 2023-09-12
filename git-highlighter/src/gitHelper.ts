@@ -16,6 +16,7 @@ import { getWorkspacePath, getCommitList } from './library';
 import { debugLog, DEBUG } from './library';
 import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
 import { CommitListViewProvider, Commit } from './commitView'
+import { debug } from 'console';
 export class GitProcessor {
     private workspacePath: string;
     private git: SimpleGit;
@@ -80,6 +81,7 @@ export class GitProcessor {
         for (let l of log.all) {
             map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
             this.commitList.push(new Commit(l.message, new Date(l.date)));
+            debugLog(`Commit: ${l.message}, ${l.hash}`);
         }
 
         const current: DefaultLogFields = {
@@ -115,7 +117,7 @@ export class GitProcessor {
             });
         }
 
-        commitList.forEach(commit => {debugLog(`Commit: ${commit}, ${this.gitLogMap.get(commit)?.hash}`);});
+        //commitList.forEach(commit => {debugLog(`Commit: ${commit}, ${this.gitLogMap.get(commit)?.hash}`);});
 
         const filePromises = commitList.map(commit => {
             const hash = this.gitLogMap.get(commit)?.hash;
@@ -137,7 +139,11 @@ export class GitProcessor {
             }
             debugLog(`======================`);
         }
+
         vscode.window.showInformationMessage(`Changes found in ${this.gitHighlightFiles.size} files`);
+        if (this.gitHighlightFiles.size > 100) {
+            vscode.window.showWarningMessage(`More than 100 files changed. This may take a while to load.`);
+        }
     }
 
     //The main function that gets the highlights
@@ -185,11 +191,16 @@ export class GitProcessor {
     async addCurrentBranch(): Promise<void> {
         let branchCommits = (await this.git.raw(['log','main..HEAD', `--pretty=format:%s`])).split('\n').map(s => s.trim()).filter(Boolean);
         debugLog(`Commits to be added: ${branchCommits}`);
-        await this.addCommits(branchCommits);
+        //await this.addCommits(branchCommits); TODOFIX
     }
 
-    async addCommits(commitList: string[]): Promise<void> {
-        await this.fillHashAndFileSet(commitList);
+    async addCommits(commitList: Commit[]): Promise<void> {
+        //await this.fillHashAndFileSet(commitList);
+        let temp: string[] = [];
+        for (let commit of commitList) {
+            temp.push(commit.commitMessage);
+        }
+        await this.fillHashAndFileSet(temp);
         await this.fillGitHighlightData();
     }
 

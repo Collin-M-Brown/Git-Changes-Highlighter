@@ -1,5 +1,6 @@
 {
     "gmap.highlightList": [
         "Collapse tree feature (#9)"
-    ]
+    ],
+    "gmap.highlightColor": "#2259b27e"
 }

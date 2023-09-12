@@ -20,10 +20,10 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<Commit> {
     }
     
     
-    addCommit(commitMessage: string, date: string) {
-        const commit = new Commit(commitMessage, new Date(date));
+    addCommit(commit: Commit) {
+        //const commit = new Commit(commitMessage, new Date(date));
         this.commits.push(commit);
-        //this._onDidChangeTreeData.fire();
+        this._onDidChangeTreeData.fire();
         //this._onDidChangeTreeData.event;
     }
     
@@ -46,7 +46,7 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<Commit> {
         this._onDidChangeTreeData.fire();
     }
 
-    getcommits() {
+    getCommits() {
         return this.commits;
     }
 }
