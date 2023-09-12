@@ -215,7 +215,7 @@ export class GitProcessor {
         if (count === undefined) {
             count = 0;
         }
-        console.log(`Count is ${count}`);
+        debugLog(`Count is ${count}`);
         context.globalState.update('count', count + 1);
     }
 }

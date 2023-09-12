@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { debugLog, DEBUG } from './library';
 
 export class CommitListViewProvider implements vscode.TreeDataProvider<Commit> {
     private _onDidChangeTreeData: vscode.EventEmitter<Commit | undefined | null | void> = new vscode.EventEmitter<Commit | undefined | null | void>();
@@ -18,16 +19,35 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<Commit> {
         }
     }
     
+    
     addCommit(commitMessage: string, date: string) {
         const commit = new Commit(commitMessage, new Date(date));
         this.commits.push(commit);
-        this._onDidChangeTreeData.fire();
+        //this._onDidChangeTreeData.fire();
+        //this._onDidChangeTreeData.event;
     }
     
-    removeCommit(commitMessage: string) {
-        console.log(`Removing commits with message: ${commitMessage}`);
-        this.commits = this.commits.filter(c => c.commitMessage !== commitMessage);
+    //removeCommit(commitMessage: string) {
+    //    debugLog(`Removing commits with message: ${commitMessage}`);
+    //    this.commits = this.commits.filter(c => c.commitMessage !== commitMessage);
+    //}
+
+    clear() {
+        this.commits = [];
         this._onDidChangeTreeData.fire();
+    }
+
+    refresh() {
+        this._onDidChangeTreeData.fire();
+    }
+
+    loadCommits(newCommits: Commit[]) {
+        newCommits.forEach(commit => this.commits.push(commit));
+        this._onDidChangeTreeData.fire();
+    }
+
+    getcommits() {
+        return this.commits;
     }
 }
 

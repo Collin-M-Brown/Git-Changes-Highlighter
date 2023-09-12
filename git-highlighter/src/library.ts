@@ -8,11 +8,11 @@ export function debugLog(message: string | undefined) {
         console.log(message);
         //const wspath = getWorkspacePath();
         //const filePath = wspath + "/logOutput.txt";
-        //console.log("hi")
+        //debugLog("hi")
         //const data = 'Hello, world!';
         //fs.writeFileSync(filePath, data);
     }
-    //console.log(message);
+    //debugLog(message);
 }
 
 export function getWorkspacePath(): string {

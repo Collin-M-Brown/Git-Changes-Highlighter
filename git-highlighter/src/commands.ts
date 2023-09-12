@@ -6,6 +6,7 @@ import { FileDataProvider } from './fileTree';
 import { getWorkspacePath, getCommitList } from './library';
 import { HighlightProcessor } from './highlighter';
 import { CommitListViewProvider, Commit } from './commitView'
+
 //import { fillGitHighlightData } from './gitHelper';
 
 /*
@@ -27,6 +28,7 @@ export class CommandProcessor {
     private gitObject!: GitProcessor;
     private hp: HighlightProcessor;
     private fileDataProvider!: FileDataProvider;
+    private commitView: CommitListViewProvider;
 
     private constructor() {
         this.highlights = {};
@@ -39,6 +41,11 @@ export class CommandProcessor {
             vscode.window.showErrorMessage(`No workspace open`);
         }
         this.hp = new HighlightProcessor();
+
+        this.commitView = new CommitListViewProvider();
+        const treeView = vscode.window.createTreeView('CommitView', {
+          treeDataProvider: this.commitView,
+        });
     }
 
     static async create() {
@@ -66,9 +73,9 @@ export class CommandProcessor {
             try {
                 console.log("Running command: gmap.highlightCommits");
                 {
-                    await this.gitObject.addCommits(getCommitList());
-                    this.hp.loadHighlights(this.gitObject.getGitHighlightData());
-                    console.log(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
+                    await this.gitObject.addCommits(getCommitList()); //give commits to gitHelper to parse
+                    this.hp.loadHighlights(this.gitObject.getGitHighlightData()); //load data to be highlighted
+                    debugLog(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
                 }
                 const editor = vscode.window.activeTextEditor;
                 if (editor) {
@@ -155,7 +162,7 @@ export class CommandProcessor {
                 // Add a delay before adding the highlight data back
                 setTimeout(() => {
                     this.updateTreeFiles(context);
-                }, 50);  // Adjust the delay as needed: very sloppy
+                }, 250);  // Adjust the delay as needed: very sloppy
             }
         });
         context.subscriptions.push(disposable);
