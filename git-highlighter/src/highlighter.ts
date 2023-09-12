@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-
+import { debugLog, DEBUG } from './library';
 export class HighlightProcessor {
     private highlights: { [uri: string]: number[] };
     private decorationType:vscode.TextEditorDecorationType;
@@ -31,14 +31,14 @@ export class HighlightProcessor {
     }
 
     applyHighlights(document: vscode.TextDocument) {
-        //console.log("Applying this.highlights in applyHighlights");
+        //debugLog("Applying this.highlights in applyHighlights");
         this.clearHighlights();
         const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
         if (editor) {
             const uri = document.uri.toString();
             const lines =this.highlights[uri] || [];
-            console.log(`Switched editor: ${uri}`);
-            console.log(`Lines: ${lines}`);
+            debugLog(`Switched editor: ${uri}`);
+            debugLog(`Lines: ${lines}`);
             const color = vscode.workspace.getConfiguration('gmap').get('highlightColor');
 
             try {
@@ -54,7 +54,7 @@ export class HighlightProcessor {
             
             try {
                 const ranges = lines.map(line => document.lineAt(line).range);
-                //console.log(`Ranges: ${ranges}`);
+                //debugLog(`Ranges: ${ranges}`);
                 editor.setDecorations(this.decorationType, ranges);
             } catch(error) {
                 console.error('Error while setting decorations:', error);
