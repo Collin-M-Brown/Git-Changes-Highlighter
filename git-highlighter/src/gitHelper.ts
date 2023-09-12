@@ -15,7 +15,7 @@ import { execSync } from 'child_process';
 import { getWorkspacePath, getCommitList } from './library';
 import { debugLog, DEBUG } from './library';
 import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
-
+import { CommitListViewProvider, Commit } from './commitView'
 export class GitProcessor {
     private workspacePath: string;
     private git: SimpleGit;
@@ -25,6 +25,7 @@ export class GitProcessor {
     private gitHighlightData: {[uri: string]: number[]};
     gitHighlightFiles: Set<string> = new Set();
     private commitHashSet: Set<string> = new Set();
+    private commitList: Commit[] = [];
 
     private constructor() {
         this.workspacePath = getWorkspacePath();
@@ -78,6 +79,7 @@ export class GitProcessor {
         const map: Map<string, DefaultLogFields> = new Map();
         for (let l of log.all) {
             map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
+            this.commitList.push(new Commit(l.message, new Date(l.date)));
         }
 
         const current: DefaultLogFields = {
@@ -217,5 +219,9 @@ export class GitProcessor {
         }
         debugLog(`Count is ${count}`);
         context.globalState.update('count', count + 1);
+    }
+
+    getCommitList(): Commit[] {
+        return this.commitList;
     }
 }

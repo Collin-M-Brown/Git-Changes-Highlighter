@@ -3,7 +3,8 @@
 import * as vscode from 'vscode';
 import { debugLog, getWorkspacePath } from './library';
 import { CommandProcessor } from './commands';
-import { CommitListViewProvider, Commit } from './commitView'
+import { CommitListViewProvider, Commit } from './commitView';
+import { GitProcessor } from './gitHelper';
 
 //let gitObject: GitProcessor;
 let commandProcessor: CommandProcessor;
@@ -20,9 +21,8 @@ export async function activate(context: vscode.ExtensionContext) {
     
     //Initialize Command Processor
     if (!commandProcessor) {
-        commandProcessor = await CommandProcessor.create();
+        commandProcessor = await CommandProcessor.create(context);
     }
-
 
     // Register the commands
     //(await vscode.commands.getCommands(true)).forEach(command=>debugLog(command));
@@ -47,6 +47,8 @@ export async function activate(context: vscode.ExtensionContext) {
     
     //Display Tree in sidebar view
     commandProcessor.updateTreeFiles(context);
+
+    commandProcessor.addCommit(context);
 }
 
 // This method is called when your extension is deactivated

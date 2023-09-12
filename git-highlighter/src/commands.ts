@@ -29,8 +29,9 @@ export class CommandProcessor {
     private hp: HighlightProcessor;
     private fileDataProvider!: FileDataProvider;
     private commitView: CommitListViewProvider;
+    private treeView: vscode.TreeView<Commit>;
 
-    private constructor() {
+    private constructor(context: vscode.ExtensionContext) {
         this.highlights = {};
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (workspaceFolders !== undefined) {
@@ -40,17 +41,19 @@ export class CommandProcessor {
         else {
             vscode.window.showErrorMessage(`No workspace open`);
         }
-        this.hp = new HighlightProcessor();
 
+        this.hp = new HighlightProcessor();
         this.commitView = new CommitListViewProvider();
-        const treeView = vscode.window.createTreeView('CommitView', {
-          treeDataProvider: this.commitView,
-        });
+        this.treeView = vscode.window.createTreeView('CommitView', { treeDataProvider: this.commitView});
+        //this.commitView.loadCommits(this.gitObject.getCommitList());
+        // Save reference to treeView for later
+        context.subscriptions.push(this.treeView);
     }
 
-    static async create() {
-        const commandProcessor = new CommandProcessor();
+    static async create(context: vscode.ExtensionContext) {
+        const commandProcessor = new CommandProcessor(context);
         commandProcessor.gitObject = await GitProcessor.create();
+        commandProcessor.commitView.loadCommits(commandProcessor.gitObject.getCommitList());
         vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
             for (const editor of editors) {
                 commandProcessor.hp.applyHighlights(editor.document);
@@ -166,5 +169,29 @@ export class CommandProcessor {
             }
         });
         context.subscriptions.push(disposable);
+    }
+
+    addCommit(context: vscode.ExtensionContext) {
+        let found = false;
+        let commits: Commit[] = [];
+        this.treeView.onDidChangeSelection(e => {
+            debugLog("hi");
+            if (e.selection.length > 0) {
+                if (!found) {
+                    const item = e.selection[0] as Commit;
+                    //vscode.window.showInformationMessage(`You clicked on commit: ${item.commitMessage}`);
+                    debugLog(`You clicked on commit: ${item.commitMessage}`);
+                    // Remove the selected commit from the commits array
+                    commits = this.commitView.getcommits().filter(c => c.commitMessage !== item.commitMessage);
+                    this.commitView.clear();
+                    found = true;
+                }
+            }
+            else {
+                console.log(`loading commits ${commits}`);
+                this.commitView.loadCommits(commits);
+                found = false;
+            }
+        });
     }
 }
