@@ -23,7 +23,11 @@
             },
             {
                 "command": "gmap.highlightCommits",
-                "title": "gmap: Highlight From List"
+                "title": "gmap: Highlight From List",
+                "icon": {
+                    "light": "./images/run_light.svg",
+                    "dark": "./images/run_dark.svg"
+                }
             },
             {
                 "command": "gmap.highlightUncommitedChanges",
@@ -45,17 +49,25 @@
                 "command": "gmap.collapseAll",
                 "title": "min",
                 "icon": {
-                    "light": "./images/black_minus.svg",
-                    "dark": "./images/white_minus.svg"
+                    "light": "./images/minus_light.svg",
+                    "dark": "./images/minus_dark.svg"
                 }
             },
             {
                 "command": "gmap.expandAll",
                 "title": "max",
                 "icon": {
-                    "light": "./images/black_plus.svg",
-                    "dark": "./images/white_plus.svg"
+                    "light": "./images/plus_light.svg",
+                    "dark": "./images/plus_dark.svg"
                 }
+            },
+            {
+                "command": "gmap.openSettings",
+                "title": "settings"
+            },
+            {
+                "command": "gmap.run",
+                "title": "Run"
             }
         ],
         "configuration": [
@@ -86,14 +98,14 @@
         "viewsContainers": {
             "activitybar": [
                 {
-                    "id": "TreeView",
+                    "id": "GitVision",
                     "title": "Tree View",
                     "icon": "$(file-directory)"
                 }
             ]
         },
         "views": {
-            "TreeView": [
+            "GitVision": [
                 {
                     "id": "gitHighlightsView",
                     "name": "Files with changes"
@@ -113,26 +125,25 @@
                 {
                     "command": "gmap.collapseAll",
                     "when": "view == gitHighlightsView",
-                    "group": "navigation"
+                    "group": "navigation@1"
                 },
                 {
                     "command": "gmap.expandAll",
                     "when": "view == gitHighlightsView",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "gmap.highlightCommits",
+                    "when": "view == CommitView",
                     "group": "navigation"
                 },
                 {
-                    "command": "gmap.expandAll",
-                    "when": "view == CommitView",
-                    "group": "navigation"
+                    "command": "gmap.openSettings",
+                    "when": "true",
+                    "group": "1_navigation"
                 }
             ]
-        },
-        "view/item/context": [
-            {
-                "command": "gmap.testCommit",
-                "when": "view == CommitView"
-            }
-        ]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run package",
@@ -161,6 +172,7 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
+        "ignore": "^5.2.4",
         "simple-git": "^3.19.1"
     }
 }

@@ -1,39 +1,31 @@
 import * as vscode from 'vscode';
 import { debugLog, DEBUG } from './library';
 
-export class CommitListViewProvider implements vscode.TreeDataProvider<Commit> {
-    private _onDidChangeTreeData: vscode.EventEmitter<Commit | undefined | null | void> = new vscode.EventEmitter<Commit | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<Commit | undefined | null | void> = this._onDidChangeTreeData.event;
+export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: string]: string }> {
+    private _onDidChangeTreeData: vscode.EventEmitter<undefined | null | void> = new vscode.EventEmitter<undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<undefined | null | void> = this._onDidChangeTreeData.event;
     
-    private commits: Commit[] = [];
+    private commits: { [key: string]: string } = {};
     
-    getTreeItem(element: Commit): vscode.TreeItem {
-        return element;
+    getTreeItem(element: { key: string, value: string }): vscode.TreeItem {
+        return new vscode.TreeItem(element.key, vscode.TreeItemCollapsibleState.None);
     }
     
-    getChildren(element?: Commit): Thenable<Commit[]> {
+    getChildren(element?: { key: string, value: string }): Thenable<{ key: string, value: string }[]> {
         if (element) {
             return Promise.resolve([]);
         } else {
-            return Promise.resolve(this.commits.sort((a, b) => b.date.getTime() - a.date.getTime()));
+            return Promise.resolve(Object.entries(this.commits).sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime()).map(([key, value]) => ({ key, value })));
         }
     }
     
-    
-    addCommit(commit: Commit) {
-        //const commit = new Commit(commitMessage, new Date(date));
-        this.commits.push(commit);
+    addCommit(commit: { key: string, value: string }) {
+        this.commits[commit.key] = commit.value;
         this._onDidChangeTreeData.fire();
-        //this._onDidChangeTreeData.event;
     }
     
-    //removeCommit(commitMessage: string) {
-    //    debugLog(`Removing commits with message: ${commitMessage}`);
-    //    this.commits = this.commits.filter(c => c.commitMessage !== commitMessage);
-    //}
-
     clear() {
-        this.commits = [];
+        this.commits = {};
         this._onDidChangeTreeData.fire();
     }
 
@@ -41,20 +33,14 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<Commit> {
         this._onDidChangeTreeData.fire();
     }
 
-    loadCommits(newCommits: Commit[]) {
-        newCommits.forEach(commit => this.commits.push(commit));
+    loadCommits(newCommits: { [key: string]: string }) {
+        for (let key in newCommits) {
+            this.commits[key] = newCommits[key];
+        }
         this._onDidChangeTreeData.fire();
     }
 
     getCommits() {
         return this.commits;
-    }
-}
-
-export class Commit extends vscode.TreeItem {
-    constructor(public readonly commitMessage: string, public readonly date: Date) {
-        super(commitMessage, vscode.TreeItemCollapsibleState.None);
-        this.description = `Date: ${date.toLocaleString()}`; // Display the date as the description of the TreeItem
-        this.tooltip = `Commit: ${commitMessage}\nDate: ${date.toLocaleString()}`; // Display the commit message and date in the tooltip
     }
 }

@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { debugLog, getWorkspacePath } from './library';
 import { CommandProcessor } from './commands';
-import { CommitListViewProvider, Commit } from './commitView';
+//import { CommitListViewProvider, Commit } from './commitView';
 import { GitProcessor } from './gitHelper';
 
 //let gitObject: GitProcessor;
@@ -28,6 +28,10 @@ export async function activate(context: vscode.ExtensionContext) {
     //(await vscode.commands.getCommands(true)).forEach(command=>debugLog(command));
     //vscode.commands.executeCommand("");
 
+    context.subscriptions.push(vscode.commands.registerCommand('gmap.openSettings', () => {
+        vscode.commands.executeCommand('workbench.action.openSettings', 'gmap');
+    }));
+
     //highlight current line
     commandProcessor.highlightLine(context);
 
@@ -49,6 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
     commandProcessor.updateTreeFiles(context);
 
     commandProcessor.addCommit(context);
+    commandProcessor.removeCommit(context);
 }
 
 // This method is called when your extension is deactivated

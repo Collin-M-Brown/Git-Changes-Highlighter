@@ -5,7 +5,7 @@ import { GitProcessor } from './gitHelper';
 import { FileDataProvider } from './fileTree';
 import { getWorkspacePath, getCommitList } from './library';
 import { HighlightProcessor } from './highlighter';
-import { CommitListViewProvider, Commit } from './commitView'
+import { CommitListViewProvider } from './commitView'
 
 //import { fillGitHighlightData } from './gitHelper';
 
@@ -30,8 +30,8 @@ export class CommandProcessor {
     private fileDataProvider!: FileDataProvider;
     private commitView: CommitListViewProvider;
     private commitRepo: CommitListViewProvider;
-    private commitViewDropdown: vscode.TreeView<Commit>;
-    private commitRepoDropdown: vscode.TreeView<Commit>;
+    private commitViewDropdown: vscode.TreeView<{ [key: string]: string }>;
+    private commitRepoDropdown: vscode.TreeView<{ [key: string]: string }>;
 
     private constructor(context: vscode.ExtensionContext) {
         this.highlights = {};
@@ -49,7 +49,6 @@ export class CommandProcessor {
         this.commitRepo = new CommitListViewProvider();
         this.commitViewDropdown = vscode.window.createTreeView('CommitView', { treeDataProvider: this.commitView});
         this.commitRepoDropdown = vscode.window.createTreeView('CommitRepo', { treeDataProvider: this.commitRepo});
-        //this.
 
         context.subscriptions.push(this.commitViewDropdown);
         context.subscriptions.push(this.commitRepoDropdown);
@@ -81,6 +80,7 @@ export class CommandProcessor {
             try {
                 debugLog("Running command: gmap.highlightCommits");
                 {
+                    vscode.commands.executeCommand('gmap.clearAll');
                     await this.gitObject.addCommits(this.commitView.getCommits()); //give commits to gitHelper to parse
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData()); //load data to be highlighted
                     //debugLog(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
@@ -178,16 +178,16 @@ export class CommandProcessor {
 
     addCommit(context: vscode.ExtensionContext) {
         let found = false;
-        let commits: Commit[] = [];
+        let commits: { [key: string]: string } = {};
         this.commitRepoDropdown.onDidChangeSelection(e => {
             //debugLog("hi");
             if (e.selection.length > 0) {
                 if (!found) {
-                    const item = e.selection[0] as Commit;
+                    const item = e.selection[0] as { key: string, value: string };;
                     //vscode.window.showInformationMessage(`You clicked on commit: ${item.commitMessage}`);
-                    debugLog(`You clicked on commit: ${item.commitMessage}`);
-                    // Remove the selected commit from the commits array
-                    commits = this.commitRepo.getCommits().filter(c => c.commitMessage !== item.commitMessage);
+                    debugLog(`You clicked on commit: ${item.key}`);
+                    commits = this.commitRepo.getCommits();
+                    delete commits[item.key];
                     this.commitView.addCommit(item);
                     this.commitRepo.clear();
                     found = true;
@@ -199,5 +199,37 @@ export class CommandProcessor {
                 found = false;
             }
         });
+    }
+
+    removeCommit(context: vscode.ExtensionContext) {
+        let found = false;
+        let commits: { [key: string]: string } = {};
+        this.commitViewDropdown.onDidChangeSelection(e => {
+            //debugLog("hi");
+            if (e.selection.length > 0) {
+                if (!found) {
+                    const item = e.selection[0] as { key: string, value: string };;
+                    debugLog(`You clicked on commit: ${item.key}`);
+                    commits = this.commitView.getCommits();
+                    delete commits[item.key];
+                    this.commitRepo.addCommit(item);
+                    this.commitView.clear();
+                    found = true;
+                }
+            }
+            else {
+                //debugLog(`loading commits ${commits}`);
+                this.commitView.loadCommits(commits);
+                found = false;
+            }
+        });
+    }
+
+    run(context: vscode.ExtensionContext) {
+        let disposable = vscode.commands.registerCommand('gmap.run', async () => {
+            debugLog("Running command: gmap.run");
+            vscode.commands.executeCommand('gmap.highlightCommits');
+        });
+        context.subscriptions.push(disposable);
     }
 }
