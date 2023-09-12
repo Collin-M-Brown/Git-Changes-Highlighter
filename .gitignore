@@ -2,4 +2,3 @@ git-highlighter/dist/*
 git-highlighter/node_modules/*
 git-highlighter/*.vsix
 git-highlighter/.vscode/settings.json
-git-highlighter/commitLoadtest.txt
