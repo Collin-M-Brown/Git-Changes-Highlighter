@@ -13,14 +13,9 @@
     "categories": [
         "Other"
     ],
-    "activationEvents": [],
     "main": "./dist/extension.js",
     "contributes": {
         "commands": [
-            {
-                "command": "gmap.highlightLine",
-                "title": "gmap: Highlight Line"
-            },
             {
                 "command": "gmap.highlightCommits",
                 "title": "gmap: Highlight From List",
@@ -30,20 +25,20 @@
                 }
             },
             {
-                "command": "gmap.highlightUncommitedChanges",
-                "title": "gmap: Highlight Uncommited Changes"
-            },
-            {
-                "command": "gmap.highlightBranch",
-                "title": "gmap: Highlight Current Branch"
-            },
-            {
                 "command": "gmap.clearAll",
-                "title": "gmap: Clear All Highlights"
+                "title": "gmap: Clear All Highlights",
+                "icon": {
+                    "light": "./images/clear-all-light.svg",
+                    "dark": "./images/clear-all-dark.svg"
+                }
             },
             {
-                "command": "gmap.testCommit",
-                "title": "test1"
+                "command": "gmap.hideHighlights",
+                "title": "gmap: Hide Highlights",
+                "icon": {
+                    "light": "./images/debug-reverse-continue.svg",
+                    "dark": "./images/debug-reverse-continue.svg"
+                }
             },
             {
                 "command": "gmap.collapseAll",
@@ -64,10 +59,6 @@
             {
                 "command": "gmap.openSettings",
                 "title": "settings"
-            },
-            {
-                "command": "gmap.run",
-                "title": "Run"
             }
         ],
         "configuration": [
@@ -77,7 +68,8 @@
                     "gmap.highlightColor": {
                         "type": "string",
                         "default": "#2259b27e",
-                        "description": "The color to use for highlights"
+                        "description": "The color to use for highlights",
+                        "scope": "application"
                     },
                     "gmap.commitListPath": {
                         "type": "string",
@@ -133,14 +125,24 @@
                     "group": "navigation@2"
                 },
                 {
-                    "command": "gmap.highlightCommits",
+                    "command": "gmap.highlightCommits", 
                     "when": "view == CommitView",
-                    "group": "navigation"
+                    "group": "navigation@1"
                 },
                 {
                     "command": "gmap.openSettings",
                     "when": "true",
                     "group": "1_navigation"
+                },
+                {
+                    "command": "gmap.clearAll",
+                    "when": "view == CommitView",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "gmap.hideHighlights",
+                    "when": "view == CommitView",
+                    "group": "navigation@2"
                 }
             ]
         }

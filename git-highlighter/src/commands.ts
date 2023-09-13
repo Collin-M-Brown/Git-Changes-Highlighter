@@ -3,28 +3,11 @@ import { exit } from 'process';
 import { debugLog } from './library';
 import { GitProcessor } from './gitHelper';
 import { FileDataProvider } from './fileTree';
-import { getWorkspacePath, getCommitList } from './library';
 import { HighlightProcessor } from './highlighter';
-import { CommitListViewProvider } from './commitView'
-
-//import { fillGitHighlightData } from './gitHelper';
-
-/*
-Example format ofthis.highlights.json:
-TODO: Add these files to watchlist and update when changed
-{
-    "file:///Users/cb/Git/Git-Changes-Highlighter/gmap/src/extension.ts": [
-        15,
-        22,
-    ],
-    "file:///Users/cb/Git/Git-Changes-Highlighter/gmap/src/gitHelper.ts": [
-        ...,
-    ]
-}*/
+import { CommitListViewProvider } from './commitView';
 
 export class CommandProcessor {
-    //let jsonhighlights: string;
-    private highlights: { [uri: string]: number[] };
+    //private highlights: { [uri: string]: number[] };
     private gitObject!: GitProcessor;
     private hp: HighlightProcessor;
     private fileDataProvider!: FileDataProvider;
@@ -34,10 +17,10 @@ export class CommandProcessor {
     private commitRepoDropdown: vscode.TreeView<{ [key: string]: string }>;
 
     private constructor(context: vscode.ExtensionContext) {
-        this.highlights = {};
+        //this.highlights = {};
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (workspaceFolders !== undefined) {
-            this.fileDataProvider = new FileDataProvider(workspaceFolders[0].uri.fsPath, new Set<string>);
+            this.fileDataProvider = new FileDataProvider(workspaceFolders[0].uri.fsPath, new Set<string>());
             vscode.window.registerTreeDataProvider('gitHighlightsView', this.fileDataProvider);
         }
         else {
@@ -80,7 +63,9 @@ export class CommandProcessor {
             try {
                 debugLog("Running command: gmap.highlightCommits");
                 {
-                    vscode.commands.executeCommand('gmap.clearAll');
+                    this.gitObject.clearHighlightData();
+                    this.hp.clearAllHighlights();
+                    this.updateTreeFiles(context);
                     await this.gitObject.addCommits(this.commitView.getCommits()); //give commits to gitHelper to parse
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData()); //load data to be highlighted
                     //debugLog(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
@@ -91,14 +76,14 @@ export class CommandProcessor {
                 }
                 this.updateTreeFiles(context);
             } catch (error) {
-                vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
-                exit(1);
+                vscode.window.showErrorMessage("diff-highlighter failed to run.");
             }
         });
         context.subscriptions.push(disposable);
     }
 
     highlightCurrent(context: vscode.ExtensionContext) {
+        return; //Disabled for now
         let disposable = vscode.commands.registerCommand('gmap.highlightUncommitedChanges', async () => {
             try {
                     debugLog("Running command: gmap.highlightUncommitedChanges");
@@ -118,6 +103,7 @@ export class CommandProcessor {
     }
 
     highlightBranch(context: vscode.ExtensionContext) {
+        return; //Disabled for now
         let disposable = vscode.commands.registerCommand('gmap.highlightBranch', async () => {
             try {
                 debugLog("Running command: gmap.highlightBranch");
@@ -138,11 +124,17 @@ export class CommandProcessor {
     }
 
     clearAllHighlights(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.clearAll', () => {
+        let disposable = vscode.commands.registerCommand('gmap.clearAll', async () => {
             debugLog("Running command: gmap.clearAll");
-            this.gitObject.clearHighlightData();
-            this.hp.clearAllHighlights();
-            this.updateTreeFiles(context);
+            let confirmation = await vscode.window.showInformationMessage('Are you sure you want to clear the list?', { modal: true }, 'Yes', 'No');
+
+            if (confirmation === 'Yes') {
+                this.commitRepo.loadCommits(this.gitObject.getCommitList());
+                this.commitView.clear();
+                this.gitObject.clearHighlightData();
+                this.hp.clearAllHighlights();
+                this.updateTreeFiles(context);
+            }
         });
         context.subscriptions.push(disposable);
     }
@@ -225,10 +217,10 @@ export class CommandProcessor {
         });
     }
 
-    run(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.run', async () => {
-            debugLog("Running command: gmap.run");
-            vscode.commands.executeCommand('gmap.highlightCommits');
+    hideHighlights(context: vscode.ExtensionContext) {
+        let disposable = vscode.commands.registerCommand('gmap.hideHighlights', async () => {
+            debugLog("Running command: gmap.hideHighlights");
+            this.hp.clearAllHighlights();
         });
         context.subscriptions.push(disposable);
     }

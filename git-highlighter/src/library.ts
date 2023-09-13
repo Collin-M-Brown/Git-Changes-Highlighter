@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 
-export const DEBUG = true;
+export const DEBUG = false;
 export function debugLog(message: string | undefined) {
     if (DEBUG) {
         console.log(message);

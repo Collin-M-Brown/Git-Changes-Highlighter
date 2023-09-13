@@ -40,6 +40,7 @@ export class HighlightProcessor {
             debugLog(`Switched editor: ${uri}`);
             debugLog(`Lines: ${lines}`);
             const color = vscode.workspace.getConfiguration('gmap').get('highlightColor');
+            debugLog(`Color: ${color}`);
 
             try {
                 this.decorationType.dispose(); 
@@ -54,7 +55,6 @@ export class HighlightProcessor {
             
             try {
                 const ranges = lines.map(line => document.lineAt(line).range);
-                //debugLog(`Ranges: ${ranges}`);
                 editor.setDecorations(this.decorationType, ranges);
             } catch(error) {
                 console.error('Error while setting decorations:', error);

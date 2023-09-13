@@ -14,11 +14,10 @@ import { execSync } from 'child_process';
 import { getWorkspacePath, getCommitList } from './library';
 import { debugLog, DEBUG } from './library';
 import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
-//import { Commit } from './commitView'
 
 const fs = require('fs');
 const path = require('path');
-const ignore = require('ignore');
+// /const ignore = require('ignore');
 
 export class GitProcessor {
     private workspacePath: string;
@@ -31,14 +30,14 @@ export class GitProcessor {
     private commitHashSet: Set<string> = new Set();
     //private commitList: Commit[] = [];
     private commitList: { [key: string]: string } = {};
-    private gitignoreContent;
-    private ig ;
+    //private gitignoreContent;
+    //private ig ;
 
     private constructor() {
         this.workspacePath = getWorkspacePath();
         this.git = simpleGit(this.workspacePath);
-        this.gitignoreContent = fs.readFileSync(path.join(this.workspacePath, '.gitignore')).toString();
-        this.ig = ignore().add(this.gitignoreContent);
+        //this.gitignoreContent = fs.readFileSync(path.join(this.workspacePath, '.gitignore')).toString();
+        //this.ig = ignore().add(this.gitignoreContent);
         //this.gitLsFiles = this.git.raw(['ls-files']);
         this.gitLogPromise = this.setGitLogMap();
         this.gitLogMap = new Map();
@@ -70,6 +69,20 @@ export class GitProcessor {
         }
     }
 
+    private async checkIgnore(filePath: string): Promise<boolean> {
+        try {
+            const result = await this.git.raw(['check-ignore', filePath]);
+            return result.trim() !== '';
+        } catch (err) {
+            if (err instanceof Error) {
+                if (err.message.includes('not ignored')) {
+                    return false;
+                }
+            }
+            throw err;
+        }
+    }
+
     private async setGitLogMap(): Promise<Map<string, DefaultLogFields>> {
         try {
             const log = await this.git.log();
@@ -96,19 +109,22 @@ export class GitProcessor {
         try {
             let res: string[];
             if (hash === '0000000000000000000000000000000000000000') {
-                res = (await this.git.raw(['diff','--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+                res = (await this.git.raw(['diff', '--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
             }
             else {
                 res = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
             }
-            
+    
             // Filter out ignored files
-            res = res.filter(file => {
+            const filteredFiles: (string | null)[] = await Promise.all(res.map(async file => {
                 // Convert to relative path
                 const relativePath = path.relative(process.cwd(), file);
-                // Return true if the file is NOT ignored
-                return !this.ig.ignores(relativePath);
-            });
+                // Return the file if it is NOT ignored
+                return !(await this.checkIgnore(relativePath)) ? file : null;
+            }));
+    
+            // Remove null values from the array
+            res = filteredFiles.filter((file): file is string => file !== null);
     
             debugLog(`Changed files for hash: ${hash}: ${res}`);
             return res;
@@ -168,7 +184,11 @@ export class GitProcessor {
 
         //vscode.window.showInformationMessage(`Changes found in ${this.gitHighlightFiles.size} files`);
         if (this.gitHighlightFiles.size > 100) {
-            vscode.window.showWarningMessage(`More than 100 files changed. This may take a while to load.`);
+            let confirmation = await vscode.window.showInformationMessage('Are you sure you want to clear the list?', { modal: true }, 'Yes', 'No');
+
+            if (!(confirmation === 'Yes')) {
+                this.clearHighlightData();
+            }
         }
     }
 
@@ -179,16 +199,16 @@ export class GitProcessor {
     @this.gitHighlightData
     */
     private async fillGitHighlightData() {
-
         //debugLog(`fillGitHighlightData: ${this.gitHighlightFiles}`);
         let errorCount = 0;
+        let updatedGitHighlightFiles = new Set<string>();
         for (let file of this.gitHighlightFiles) {
             debugLog(`finding hash data for file: ${file}`);
-            //check for empty file or empty blame file
             if (file.trim() === '') {
                 continue;
             }
 
+            let foundInHashSet = false;
             try {
                 const blameFile: string[] = (await this.git.raw(['blame', `-l`, `${file}`])).split('\n').map(s => s.trim()).filter(Boolean);
                 if (blameFile.length === 0) {
@@ -203,10 +223,14 @@ export class GitProcessor {
                     while (lineNumber < blameFile.length && this.commitHashSet.has(lineHash)) {
                         this.gitHighlightData[uri].push(lineNumber);
                         lineNumber++;
+                        foundInHashSet = true;
                         if (lineNumber < blameFile.length) {
                             lineHash = blameFile[lineNumber].split(' ')[0].trim();
                         }
                     }
+                }
+                if (foundInHashSet) {
+                    updatedGitHighlightFiles.add(file);
                 }
                 if (DEBUG) {
                     debugLog(`==Highlights for ${file}==`);
@@ -219,6 +243,7 @@ export class GitProcessor {
                 vscode.window.showErrorMessage(`Error getting blame for file: ${file}`);
             }
         }
+        this.gitHighlightFiles = updatedGitHighlightFiles;
     }
 
     async addCurrentBranch(): Promise<void> {
@@ -233,11 +258,7 @@ export class GitProcessor {
     }
 
     async addCommits(commitList: { [key: string]: string }): Promise<void> {
-        //await this.fillHashAndFileSet(commitList);
         let temp: string[] = Object.keys(commitList);
-        //for (let commit of Object.values(commitList))) {
-        //    temp.push(commit.commitMessage);
-        //}
         await this.fillHashAndFileSet(temp);
         await this.fillGitHighlightData();
     }
@@ -258,6 +279,7 @@ export class GitProcessor {
         this.gitHighlightData = {};
         this.gitHighlightFiles = new Set();
         this.commitHashSet = new Set();
+        this.commitList = {};
     }
 
     saveState(context: vscode.ExtensionContext) {

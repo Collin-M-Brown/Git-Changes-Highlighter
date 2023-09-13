@@ -41,4 +41,6 @@
             commitListViewProvider.loadCommits(commits);
             found = false;
         }
-    });*/
+    });
+    
+    */
