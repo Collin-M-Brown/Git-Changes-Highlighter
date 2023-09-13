@@ -1,12 +1,12 @@
-Workspace path: /Users/cb/Git/Git-Changes-Highlighter/gmap
+Workspace path: /Users/cb/Git/Git-Changes-Highlighter/gitVision
 extensionHostProcess.js:108
-gmap is now active!
+gitVision is now active!
 extensionHostProcess.js:108
 Registering test command
 extensionHostProcess.js:108
 Starting diff
 extensionHostProcess.js:108
-/Users/cb/Git/Git-Changes-Highlighter/gmap/.vscode/CommitList
+/Users/cb/Git/Git-Changes-Highlighter/gitVision/.vscode/CommitList
 extensionHostProcess.js:108
 Completed for command "git log | grep -B 7 -m 1 "Fixes for dynamic higlight loading"": 194
 extensionHostProcess.js:108
@@ -23,35 +23,35 @@ extensionHostProcess.js:108
 Merged branch: "json compiler fixes" -> 4400df7daba8d52d3f0c75f7041f02575976d47f
 
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/gmap/.gitignore
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/gitVision/.gitignore
 extensionHostProcess.js:108
 Completed for command "git ls-files .gitignore": 0
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/gmap/gmap/dist/extension.js
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/gitVision/gitVision/dist/extension.js
 extensionHostProcess.js:108
-Completed for command "git ls-files gmap/dist/extension.js": 0
+Completed for command "git ls-files gitVision/dist/extension.js": 0
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/gmap/gmap/dist/extension.js.map
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/gitVision/gitVision/dist/extension.js.map
 extensionHostProcess.js:108
-Completed for command "git ls-files gmap/dist/extension.js.map": 0
+Completed for command "git ls-files gitVision/dist/extension.js.map": 0
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/gmap/gmap/dist/highlights.json
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/gitVision/gitVision/dist/highlights.json
 extensionHostProcess.js:108
-Completed for command "git ls-files gmap/dist/highlights.json": 0
+Completed for command "git ls-files gitVision/dist/highlights.json": 0
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/gmap/gmap/src/extension.ts
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/gitVision/gitVision/src/extension.ts
 extensionHostProcess.js:108
-Completed for command "git ls-files gmap/src/extension.ts": 0
+Completed for command "git ls-files gitVision/src/extension.ts": 0
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/gmap/gmap/src/gitHelper.ts
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/gitVision/gitVision/src/gitHelper.ts
 extensionHostProcess.js:108
-Completed for command "git ls-files gmap/src/gitHelper.ts": 0
+Completed for command "git ls-files gitVision/src/gitHelper.ts": 0
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/gmap/gmap/package.json
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/gitVision/gitVision/package.json
 extensionHostProcess.js:108
-Completed for command "git ls-files gmap/package.json": 0
+Completed for command "git ls-files gitVision/package.json": 0
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/gmap/tsconfig.json
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/gitVision/tsconfig.json
 extensionHostProcess.js:108
 Completed for command "git ls-files tsconfig.json": 14
 extensionHostProcess.js:108

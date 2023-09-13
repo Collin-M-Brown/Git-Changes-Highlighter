@@ -24,7 +24,7 @@ export class GitProcessor {
     private git: SimpleGit;
     //private gitLsFiles: Set<string>;
     private gitLogPromise: Promise<Map<string, DefaultLogFields>>;
-    private gitLogMap: Map<string, DefaultLogFields>;
+    private gitLogitVision: Map<string, DefaultLogFields>;
     private gitHighlightData: {[uri: string]: number[]};
     private gitHighlightFiles: Set<string> = new Set();
     private commitHashSet: Set<string> = new Set();
@@ -39,8 +39,8 @@ export class GitProcessor {
         //this.gitignoreContent = fs.readFileSync(path.join(this.workspacePath, '.gitignore')).toString();
         //this.ig = ignore().add(this.gitignoreContent);
         //this.gitLsFiles = this.git.raw(['ls-files']);
-        this.gitLogPromise = this.setGitLogMap();
-        this.gitLogMap = new Map();
+        this.gitLogPromise = this.setGitLogitVision();
+        this.gitLogitVision = new Map();
         this.gitHighlightData = {};
     }
 
@@ -52,8 +52,8 @@ export class GitProcessor {
 
     private async setUp()
     {
-        // 1. set gitLogMap
-        this.gitLogMap = await this.gitLogPromise;
+        // 1. set gitLogitVision
+        this.gitLogitVision = await this.gitLogPromise;
     }
 
     private executeCommand(command: string): string {
@@ -83,7 +83,7 @@ export class GitProcessor {
         }
     }
 
-    private async setGitLogMap(): Promise<Map<string, DefaultLogFields>> {
+    private async setGitLogitVision(): Promise<Map<string, DefaultLogFields>> {
         try {
             const log = await this.git.log();
             const map: Map<string, DefaultLogFields> = new Map();
@@ -137,13 +137,13 @@ export class GitProcessor {
     //input is a list of commit messages
     private async fillHashAndFileSet(commitList: string[]) {
 
-        if (this.gitLogMap.size === 0) {
+        if (this.gitLogitVision.size === 0) {
             debugLog(`No git log found. Please check that you are in a git repository.`);
             vscode.window.showErrorMessage(`No git log found. Please check that you are in a git repository.`);
         }
 
         if (false) {
-            this.gitLogMap.forEach((value, key) => {
+            this.gitLogitVision.forEach((value, key) => {
                 debugLog(`Key: ${key}, Value: ${value.hash}`);
                 if (key in commitList) {
                     debugLog(`Key: ${key}, Value: ${value.hash}`);
@@ -152,7 +152,7 @@ export class GitProcessor {
         }
 
         const filePromises = commitList.map(commit => {
-            const hash = this.gitLogMap.get(commit)?.hash;
+            const hash = this.gitLogitVision.get(commit)?.hash;
             if (hash) {
                 this.commitHashSet.add(hash);
                 return this.getChangedFiles(`${hash}`);

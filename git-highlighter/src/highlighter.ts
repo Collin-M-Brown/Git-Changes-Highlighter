@@ -39,7 +39,7 @@ export class HighlightProcessor {
             const lines =this.highlights[uri] || [];
             debugLog(`Switched editor: ${uri}`);
             debugLog(`Lines: ${lines}`);
-            const color = vscode.workspace.getConfiguration('gmap').get('highlightColor');
+            const color = vscode.workspace.getConfiguration('gitVision').get('highlightColor');
             debugLog(`Color: ${color}`);
 
             try {

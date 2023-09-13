@@ -14,8 +14,8 @@ export async function activate(context: vscode.ExtensionContext) {
         commandProcessor = await CommandProcessor.create(context);
     }
 
-    context.subscriptions.push(vscode.commands.registerCommand('gmap.openSettings', () => {
-        vscode.commands.executeCommand('workbench.action.openSettings', 'gmap');
+    context.subscriptions.push(vscode.commands.registerCommand('gitVision.openSettings', () => {
+        vscode.commands.executeCommand('workbench.action.openSettings', 'gitVision');
     }));
 
     //highlight current line
@@ -42,7 +42,7 @@ export async function activate(context: vscode.ExtensionContext) {
     commandProcessor.removeCommit(context);
     commandProcessor.hideHighlights(context);
 /*
-    let disposable = vscode.commands.registerCommand('gmap.openColorPicker', () => {
+    let disposable = vscode.commands.registerCommand('gitVision.openColorPicker', () => {
         // Create and show a new webview
         const panel = vscode.window.createWebviewPanel(
             'colorPicker',
@@ -57,7 +57,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 switch (message.command) {
                     case 'colorSelected':
                         console.log(`Color selected: ${message.color}`);
-                        vscode.workspace.getConfiguration('gmap').update('highlightColor', message.color, vscode.ConfigurationTarget.Global);
+                        vscode.workspace.getConfiguration('gitVision').update('highlightColor', message.color, vscode.ConfigurationTarget.Global);
                         return;
                 }
             },

@@ -1,4 +1,4 @@
-# PARENT REPOSITORY: See gmap
+# PARENT REPOSITORY: See gitVision
 
 # Git-Changes-Highlighter
 

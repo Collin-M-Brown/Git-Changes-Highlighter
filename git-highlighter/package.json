@@ -1,9 +1,9 @@
 {
     "repository": {
         "type": "git",
-        "url": "https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/gmap"
+        "url": "https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/gitVision"
     },
-    "name": "gmap",
+    "name": "gitVision",
     "displayName": "Git Highlighter",
     "description": "",
     "version": "0.0.1",
@@ -17,31 +17,31 @@
     "contributes": {
         "commands": [
             {
-                "command": "gmap.highlightCommits",
-                "title": "gmap: Highlight From List",
+                "command": "gitVision.highlightCommits",
+                "title": "gitVision: Highlight From List",
                 "icon": {
                     "light": "./images/run_light.svg",
                     "dark": "./images/run_dark.svg"
                 }
             },
             {
-                "command": "gmap.clearAll",
-                "title": "gmap: Clear All Highlights",
+                "command": "gitVision.clearAll",
+                "title": "gitVision: Clear All Highlights",
                 "icon": {
                     "light": "./images/clear-all-light.svg",
                     "dark": "./images/clear-all-dark.svg"
                 }
             },
             {
-                "command": "gmap.hideHighlights",
-                "title": "gmap: Hide Highlights",
+                "command": "gitVision.hideHighlights",
+                "title": "gitVision: Hide Highlights",
                 "icon": {
                     "light": "./images/debug-reverse-continue.svg",
                     "dark": "./images/debug-reverse-continue.svg"
                 }
             },
             {
-                "command": "gmap.collapseAll",
+                "command": "gitVision.collapseAll",
                 "title": "min",
                 "icon": {
                     "light": "./images/minus_light.svg",
@@ -49,7 +49,7 @@
                 }
             },
             {
-                "command": "gmap.expandAll",
+                "command": "gitVision.expandAll",
                 "title": "max",
                 "icon": {
                     "light": "./images/plus_light.svg",
@@ -57,7 +57,7 @@
                 }
             },
             {
-                "command": "gmap.openSettings",
+                "command": "gitVision.openSettings",
                 "title": "settings"
             }
         ],
@@ -65,18 +65,18 @@
             {
                 "title": "Git Highlighter",
                 "properties": {
-                    "gmap.highlightColor": {
+                    "gitVision.highlightColor": {
                         "type": "string",
                         "default": "#2259b27e",
                         "description": "The color to use for highlights",
                         "scope": "application"
                     },
-                    "gmap.commitListPath": {
+                    "gitVision.commitListPath": {
                         "type": "string",
                         "default": null,
                         "description": "The path where the commit names are stored"
                     },
-                    "gmap.highlightList": {
+                    "gitVision.highlightList": {
                         "type": "array",
                         "default": [],
                         "description": "The commits you wish to highlight",
@@ -115,32 +115,32 @@
         "menus": {
             "view/title": [
                 {
-                    "command": "gmap.collapseAll",
+                    "command": "gitVision.collapseAll",
                     "when": "view == gitHighlightsView",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "gmap.expandAll",
+                    "command": "gitVision.expandAll",
                     "when": "view == gitHighlightsView",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "gmap.highlightCommits", 
+                    "command": "gitVision.highlightCommits", 
                     "when": "view == CommitView",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "gmap.openSettings",
+                    "command": "gitVision.openSettings",
                     "when": "true",
                     "group": "1_navigation"
                 },
                 {
-                    "command": "gmap.clearAll",
+                    "command": "gitVision.clearAll",
                     "when": "view == CommitView",
                     "group": "navigation@3"
                 },
                 {
-                    "command": "gmap.hideHighlights",
+                    "command": "gitVision.hideHighlights",
                     "when": "view == CommitView",
                     "group": "navigation@2"
                 }

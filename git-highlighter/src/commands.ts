@@ -50,8 +50,8 @@ export class CommandProcessor {
     }
 
     highlightLine(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.highlightLine', () => {
-            debugLog("Running command: gmap.highlightLine");
+        let disposable = vscode.commands.registerCommand('gitVision.highlightLine', () => {
+            debugLog("Running command: gitVision.highlightLine");
             this.hp.highlightLine();
         });
         debugLog("highlight:line registered");
@@ -59,9 +59,9 @@ export class CommandProcessor {
     }
 
     highlightCommits(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.highlightCommits', async () => {
+        let disposable = vscode.commands.registerCommand('gitVision.highlightCommits', async () => {
             try {
-                debugLog("Running command: gmap.highlightCommits");
+                debugLog("Running command: gitVision.highlightCommits");
                 {
                     this.gitObject.clearHighlightData();
                     this.hp.clearAllHighlights();
@@ -84,9 +84,9 @@ export class CommandProcessor {
 
     highlightCurrent(context: vscode.ExtensionContext) {
         return; //Disabled for now
-        let disposable = vscode.commands.registerCommand('gmap.highlightUncommitedChanges', async () => {
+        let disposable = vscode.commands.registerCommand('gitVision.highlightUncommitedChanges', async () => {
             try {
-                    debugLog("Running command: gmap.highlightUncommitedChanges");
+                    debugLog("Running command: gitVision.highlightUncommitedChanges");
                     //await this.gitObject.addCommits(["Uncommitted changes"]); TODOFIX
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData()); 
                     for (const editor of vscode.window.visibleTextEditors) {
@@ -104,9 +104,9 @@ export class CommandProcessor {
 
     highlightBranch(context: vscode.ExtensionContext) {
         return; //Disabled for now
-        let disposable = vscode.commands.registerCommand('gmap.highlightBranch', async () => {
+        let disposable = vscode.commands.registerCommand('gitVision.highlightBranch', async () => {
             try {
-                debugLog("Running command: gmap.highlightBranch");
+                debugLog("Running command: gitVision.highlightBranch");
                 await this.gitObject.addCurrentBranch();
                 this.hp.loadHighlights(this.gitObject.getGitHighlightData());
                 const editor = vscode.window.activeTextEditor;
@@ -124,8 +124,8 @@ export class CommandProcessor {
     }
 
     clearAllHighlights(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.clearAll', async () => {
-            debugLog("Running command: gmap.clearAll");
+        let disposable = vscode.commands.registerCommand('gitVision.clearAll', async () => {
+            debugLog("Running command: gitVision.clearAll");
             let confirmation = await vscode.window.showInformationMessage('Are you sure you want to clear the list?', { modal: true }, 'Yes', 'No');
 
             if (confirmation === 'Yes') {
@@ -146,15 +146,15 @@ export class CommandProcessor {
     }
 
     collapseAll(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.collapseAll', async () => {
+        let disposable = vscode.commands.registerCommand('gitVision.collapseAll', async () => {
             vscode.commands.executeCommand('workbench.actions.treeView.gitHighlightsView.collapseAll');
         });
         context.subscriptions.push(disposable);
     }
 
     expandAll(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.expandAll', async () => {
-            debugLog("Running command: gmap.expandAll");
+        let disposable = vscode.commands.registerCommand('gitVision.expandAll', async () => {
+            debugLog("Running command: gitVision.expandAll");
             if (this.fileDataProvider) {
                 //this.fileDataProvider.expandAll();
                 this.fileDataProvider.updateFiles(new Set<string>());
@@ -218,8 +218,8 @@ export class CommandProcessor {
     }
 
     hideHighlights(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.hideHighlights', async () => {
-            debugLog("Running command: gmap.hideHighlights");
+        let disposable = vscode.commands.registerCommand('gitVision.hideHighlights', async () => {
+            debugLog("Running command: gitVision.hideHighlights");
             this.hp.clearAllHighlights();
         });
         context.subscriptions.push(disposable);
