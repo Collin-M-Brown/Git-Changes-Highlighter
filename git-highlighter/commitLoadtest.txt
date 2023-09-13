@@ -1,7 +1,7 @@
   /*  //const commitListViewProvider = new CommitListViewProvider();
     //vscode.window.registerTreeDataProvider('CommitView', commitListViewProvider);
     //// Register your command here
-    //`//vscode.commands.executeCommand('gitVision.testCommit', { commitMessage: 'Test' });
+    //`//vscode.commands.executeCommand('GitVision.testCommit', { commitMessage: 'Test' });
 
     const commitListViewProvider = new CommitListViewProvider();
     const treeView = vscode.window.createTreeView('CommitView', {
@@ -11,7 +11,7 @@
     // Save reference to treeView for later
     context.subscriptions.push(treeView);
 
-    vscode.commands.registerCommand('gitVision.testCommit', (commitItem) => {
+    vscode.commands.registerCommand('GitVision.testCommit', (commitItem) => {
         debugLog(`You clicked commit1: ${commitItem.commitMessage}`);
         vscode.window.showInformationMessage(`You clicked commit: ${commitItem.commitMessage}`);
 

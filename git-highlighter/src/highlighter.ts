@@ -10,6 +10,31 @@ export class HighlightProcessor {
             backgroundColor: 'transparent',
             isWholeLine: true,
         });
+        vscode.workspace.onDidChangeTextDocument(e => {
+            const uri = e.document.uri.toString();
+            if (!this.highlights[uri]) { return; }
+            for (const change of e.contentChanges) {
+                if (change.text.includes('\n')) {
+                    // A line was added
+                    const line = e.document.lineAt(change.range.start).lineNumber + 1;
+                    for (let i = 0; i < this.highlights[uri].length; i++) {
+                        if (this.highlights[uri][i] >= line) {
+                            this.highlights[uri][i]++;
+                        }
+                    }
+                } else if (change.range.isSingleLine === false) {
+                    // A line was removed
+                    const line = e.document.lineAt(change.range.start).lineNumber + 1;
+                    for (let i = 0; i < this.highlights[uri].length; i++) {
+                        if (this.highlights[uri][i] >= line) {
+                            this.highlights[uri][i]--;
+                        }
+                    }
+                }
+            }
+        
+            this.applyHighlights(e.document);
+        });
     }
 
     loadHighlights(newHighlights: {[uri: string]: number[]}) {
@@ -30,6 +55,7 @@ export class HighlightProcessor {
         }
     }
 
+    //TODO Re parse git blame...
     applyHighlights(document: vscode.TextDocument) {
         //debugLog("Applying this.highlights in applyHighlights");
         this.clearHighlights();
@@ -37,9 +63,9 @@ export class HighlightProcessor {
         if (editor) {
             const uri = document.uri.toString();
             const lines =this.highlights[uri] || [];
-            debugLog(`Switched editor: ${uri}`);
-            debugLog(`Lines: ${lines}`);
-            const color = vscode.workspace.getConfiguration('gitVision').get('highlightColor');
+            //console.log(`Switched editor: ${uri}`);
+            //console.log(`Lines: ${lines}`);
+            const color = vscode.workspace.getConfiguration('GitVision').get('highlightColor');
             debugLog(`Color: ${color}`);
 
             try {

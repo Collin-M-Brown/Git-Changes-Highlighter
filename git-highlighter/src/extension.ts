@@ -1,10 +1,12 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
+/*
+Code flow: 
+                          -> highlight.ts 
+extension.ts->commands.ts -> commitView.ts/fileTree.ts
+                          -> gitHelper.ts
+*/
 import * as vscode from 'vscode';
 import { CommandProcessor } from './commands';
-//import { CommitListViewProvider, Commit } from './commitView';
 
-//let gitObject: GitProcessor;
 let commandProcessor: CommandProcessor;
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -13,9 +15,8 @@ export async function activate(context: vscode.ExtensionContext) {
     if (!commandProcessor) {
         commandProcessor = await CommandProcessor.create(context);
     }
-
-    context.subscriptions.push(vscode.commands.registerCommand('gitVision.openSettings', () => {
-        vscode.commands.executeCommand('workbench.action.openSettings', 'gitVision');
+    context.subscriptions.push(vscode.commands.registerCommand('GitVision.openSettings', () => {
+        vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision');
     }));
 
     //highlight current line
@@ -30,24 +31,35 @@ export async function activate(context: vscode.ExtensionContext) {
     //Show all changes in current branch
     commandProcessor.highlightBranch(context);
 
+    // Add a commit to the commit list
+    commandProcessor.addCommit(context);
+
+    // Remove a commit from the commit list
+    commandProcessor.removeCommit(context);
+
+    // Hide the highlights but keep the commit list
+    commandProcessor.hideHighlights(context);
+    
+    // Clear the highlights and commit list
     commandProcessor.clearAllHighlights(context);
     
+    // Collapse the tree view
     commandProcessor.collapseAll(context);
+
+    // Expand the tree view
     commandProcessor.expandAll(context);
     
     //Display Tree in sidebar view
     commandProcessor.updateTreeFiles(context);
 
-    commandProcessor.addCommit(context);
-    commandProcessor.removeCommit(context);
-    commandProcessor.hideHighlights(context);
 /*
-    let disposable = vscode.commands.registerCommand('gitVision.openColorPicker', () => {
+    let disposable = vscode.commands.registerCommand('GitVision.openColorPicker', () => {
         // Create and show a new webview
         const panel = vscode.window.createWebviewPanel(
             'colorPicker',
             'Color Picker',
             vscode.ViewColumn.One,
+            
             {}
         );
         panel.webview.html = getWebviewContent();
@@ -57,7 +69,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 switch (message.command) {
                     case 'colorSelected':
                         console.log(`Color selected: ${message.color}`);
-                        vscode.workspace.getConfiguration('gitVision').update('highlightColor', message.color, vscode.ConfigurationTarget.Global);
+                        vscode.workspace.getConfiguration('GitVision').update('highlightColor', message.color, vscode.ConfigurationTarget.Global);
                         return;
                 }
             },
