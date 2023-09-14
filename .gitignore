@@ -4,3 +4,6 @@ git-highlighter/*.vsix
 git-highlighter/.vscode/settings.json
 git-highlighter/commitLoadtest.txt
 git-highlighter/prompt.txt
+git-highlighter/src/merge_debug.txt
+blame.txt
+git-highlighter/src/notes.txt

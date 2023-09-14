@@ -1,4 +1,4 @@
-# GitVision Alpha
+# GitVision Alpha 
 ## Purpose
 This extension aims to provide visiual aid for viewing past commits and branches merged when in a git repository. It is specifically designed for large collaborative repositories.
 For an example; if you have multiple commits for a single feature merged to the repository, and you wish to view all the changes you have made on that feature, you can simply add all the relevant commits to a list, and then this extension will highlight all the lines that were changed in those commits.
@@ -14,7 +14,12 @@ Temp
 
 ## Known Issues
 
-Temp
+* The highlights attempt to adapt to any current changes you make. But there are some cases
+    where deleting and undoing changes can cause the highlights to be stack on top of each other.
+
+* Merged branches that did not have the commits squashed will not show any changes when added to commit list. You will need to add the commits for the branch individually. If the merged branch was squashed, this will not be an issue.
+
+* Tracking highlights and real time can cause flickering. I will add an option to enable or disable
 ## Release Notes
 
 Temp

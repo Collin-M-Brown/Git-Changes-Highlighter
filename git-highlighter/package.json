@@ -84,11 +84,6 @@
                         "description": "The color to use for highlights",
                         "scope": "application"
                     },
-                    "GitVision.commitListPath": {
-                        "type": "string",
-                        "default": null,
-                        "description": "The path where the commit names are stored"
-                    },
                     "GitVision.highlightList": {
                         "type": "array",
                         "default": [],
@@ -96,6 +91,12 @@
                         "items": {
                             "type": "string"
                         }
+                    },
+                    "GitVision.enableRealtimeHighlighting": {
+                        "title": "Enable Realtime Highlighting",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Enables real time highlighting (This can put a load on the system)"
                     }
                 }
             }

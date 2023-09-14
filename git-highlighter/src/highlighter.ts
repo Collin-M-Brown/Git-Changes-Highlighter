@@ -12,31 +12,9 @@ export class HighlightProcessor {
             backgroundColor: 'transparent',
             isWholeLine: true,
         });
-        vscode.workspace.onDidChangeTextDocument(e => {
-            const uri = e.document.uri.toString();
-            if (!this.highlights[uri]) { return; }
-            for (const change of e.contentChanges) {
-                if (change.text.includes('\n')) {
-                    // A line was added
-                    const line = e.document.lineAt(change.range.start).lineNumber + 1;
-                    for (let i = 0; i < this.highlights[uri].length; i++) {
-                        if (this.highlights[uri][i] >= line) {
-                            this.highlights[uri][i]++;
-                        }
-                    }
-                } else if (change.range.isSingleLine === false) {
-                    // A line was removed
-                    const line = e.document.lineAt(change.range.start).lineNumber + 1;
-                    for (let i = 0; i < this.highlights[uri].length; i++) {
-                        if (this.highlights[uri][i] >= line) {
-                            this.highlights[uri][i]--;
-                        }
-                    }
-                }
-            }
-        
-            this.throttledApplyHighlights(e.document);
-        });
+        //console.log(vscode.workspace.getConfiguration('GitVision').get('realtimeHighlighting'));
+        //if (vscode.workspace.getConfiguration('GitVision').get('realtimeHighlighting'))
+        this.fileWatcher();
     }
 
     loadHighlights(newHighlights: {[uri: string]: number[]}) {
@@ -50,25 +28,32 @@ export class HighlightProcessor {
         }
     }
 
-    clearHighlights() {
-        // Clear decorations in all visible text editors
-        for (const editor of vscode.window.visibleTextEditors) {
-            editor.setDecorations(this.decorationType, []);
+    loadFile(uri:string, lines:number[]) {
+        console.log(`Loading file: ${uri}`);
+        this.highlights[uri] = lines;
+    }
+
+    clearHighlights(document: vscode.TextDocument) {
+        const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
+        if (editor) {//todo try catch
+            const lines = [] || [];
+            this.decorationType.dispose();
+            const ranges = [] || [];
+            editor.setDecorations(this.decorationType, ranges);
         }
     }
 
     //TODO Re parse git blame...
     applyHighlights(document: vscode.TextDocument) {
-        //debugLog("Applying this.highlights in applyHighlights");
-        this.clearHighlights();
         const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
         if (editor) {
             const uri = document.uri.toString();
+            
             const lines =this.highlights[uri] || [];
-            //console.log(`Switched editor: ${uri}`);
+            //console.log(`applying highlights to: ${uri}`);
             //console.log(`Lines: ${lines}`);
             const color = vscode.workspace.getConfiguration('GitVision').get('highlightColor');
-            debugLog(`Color: ${color}`);
+            //debugLog(`Color: ${color}`);
 
             try {
                 this.decorationType.dispose(); 
@@ -112,12 +97,54 @@ export class HighlightProcessor {
 
     clearAllHighlights() {
         this.highlights = {};
-        this.clearHighlights();
-        this.applyHighlights(vscode.window.activeTextEditor?.document as vscode.TextDocument);
+        this.clearHighlights(vscode.window.activeTextEditor?.document as vscode.TextDocument);
     }
 
-    //clearAllHighlights(context: vscode.ExtensionContext) {
-    //    this.highlights = {};
-    //    this.applyHighlights(vscode.window.activeTextEditor?.document as vscode.TextDocument);
-    //}
+    fileWatcher() {
+        vscode.workspace.onDidChangeTextDocument(e => {
+            if (!vscode.workspace.getConfiguration('GitVision').get('enableRealtimeHighlighting'))
+                return;
+            const uri = e.document.uri.toString();
+            if (!this.highlights[uri]) { return; }
+            
+            this.highlights[uri].sort((a, b) => a - b);
+            
+            for (const change of e.contentChanges) {
+                const lineCount = (change.text.match(/\n/g) || []).length;
+                if (lineCount > 0) {
+                    const line = e.document.lineAt(change.range.start).lineNumber + 1;
+                    const i = this.binarySearch(this.highlights[uri], line);
+                    for (let j = i; j < this.highlights[uri].length; j++) {
+                        this.highlights[uri][j] += lineCount;
+                    }
+                } else if (change.range.isSingleLine === false) {
+                    const startLine = change.range.start.line;
+                    const endLine = change.range.end.line;
+                    const linesRemoved = endLine - startLine;
+                    const i = this.binarySearch(this.highlights[uri], startLine);
+                    for (let j = i; j < this.highlights[uri].length; j++) {
+                        this.highlights[uri][j] -= Math.min(this.highlights[uri][j] - startLine, linesRemoved);
+                    }
+                }
+            }
+    
+            this.throttledApplyHighlights(e.document);
+        });
+    }
+    
+    private binarySearch(array:any, target: any) {
+        let left = 0;
+        let right = array.length - 1;
+        while (left <= right) {
+            const mid = left + Math.floor((right - left) / 2);
+            if (array[mid] === target) {
+                return mid;
+            } else if (array[mid] < target) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return left;
+    }
 }
