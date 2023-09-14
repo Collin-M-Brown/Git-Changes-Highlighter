@@ -1,30 +1,12 @@
 import * as vscode from 'vscode';
 import { exit } from 'process';
-import { debugLog } from './library';
+import { debugLog, getWorkspacePath, STRESS_DEBUG } from './library';
 import { GitProcessor } from './gitHelper';
 import { FileDataProvider } from './fileTree';
-import { getWorkspacePath, getCommitList } from './library';
 import { HighlightProcessor } from './highlighter';
-import { CommitListViewProvider } from './commitView'
-
-//import { fillGitHighlightData } from './gitHelper';
-
-/*
-Example format ofthis.highlights.json:
-TODO: Add these files to watchlist and update when changed
-{
-    "file:///Users/cb/Git/Git-Changes-Highlighter/gmap/src/extension.ts": [
-        15,
-        22,
-    ],
-    "file:///Users/cb/Git/Git-Changes-Highlighter/gmap/src/gitHelper.ts": [
-        ...,
-    ]
-}*/
+import { CommitListViewProvider } from './commitView';
 
 export class CommandProcessor {
-    //let jsonhighlights: string;
-    private highlights: { [uri: string]: number[] };
     private gitObject!: GitProcessor;
     private hp: HighlightProcessor;
     private fileDataProvider!: FileDataProvider;
@@ -32,17 +14,12 @@ export class CommandProcessor {
     private commitRepo: CommitListViewProvider;
     private commitViewDropdown: vscode.TreeView<{ [key: string]: string }>;
     private commitRepoDropdown: vscode.TreeView<{ [key: string]: string }>;
+    private fileWatcherStarted = false;
+    private commitsOn: boolean = false;
 
     private constructor(context: vscode.ExtensionContext) {
-        this.highlights = {};
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (workspaceFolders !== undefined) {
-            this.fileDataProvider = new FileDataProvider(workspaceFolders[0].uri.fsPath, new Set<string>);
-            vscode.window.registerTreeDataProvider('gitHighlightsView', this.fileDataProvider);
-        }
-        else {
-            vscode.window.showErrorMessage(`No workspace open`);
-        }
+        this.fileDataProvider = new FileDataProvider(getWorkspacePath(), new Set<string>());
+        vscode.window.registerTreeDataProvider('gitHighlightsView', this.fileDataProvider);
 
         this.hp = new HighlightProcessor();
         this.commitView = new CommitListViewProvider();
@@ -57,7 +34,10 @@ export class CommandProcessor {
     static async create(context: vscode.ExtensionContext) {
         const commandProcessor = new CommandProcessor(context);
         commandProcessor.gitObject = await GitProcessor.create();
-        commandProcessor.commitRepo.loadCommits(commandProcessor.gitObject.getCommitList());
+        if (STRESS_DEBUG)
+            commandProcessor.commitView.loadCommits(commandProcessor.gitObject.getCommitList());  
+        else
+            commandProcessor.commitRepo.loadCommits(commandProcessor.gitObject.getCommitList());
         vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
             for (const editor of editors) {
                 commandProcessor.hp.applyHighlights(editor.document);
@@ -67,8 +47,8 @@ export class CommandProcessor {
     }
 
     highlightLine(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.highlightLine', () => {
-            debugLog("Running command: gmap.highlightLine");
+        let disposable = vscode.commands.registerCommand('GitVision.highlightLine', () => {
+            debugLog("Running command: GitVision.highlightLine");
             this.hp.highlightLine();
         });
         debugLog("highlight:line registered");
@@ -76,32 +56,33 @@ export class CommandProcessor {
     }
 
     highlightCommits(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.highlightCommits', async () => {
-            try {
-                debugLog("Running command: gmap.highlightCommits");
-                {
-                    vscode.commands.executeCommand('gmap.clearAll');
-                    await this.gitObject.addCommits(this.commitView.getCommits()); //give commits to gitHelper to parse
-                    this.hp.loadHighlights(this.gitObject.getGitHighlightData()); //load data to be highlighted
-                    //debugLog(`JsonHighlights set: ${this.gitObject.getGitHighlightData()}`);
-                }
-                const editor = vscode.window.activeTextEditor;
-                if (editor) {
-                    this.hp.applyHighlights(editor.document);
-                }
-                this.updateTreeFiles(context);
-            } catch (error) {
-                vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
-                exit(1);
+        let disposable = vscode.commands.registerCommand('GitVision.highlightCommits', async () => {
+            debugLog("Running command: GitVision.highlightCommits");
+
+            this.gitObject.clearHighlightData();
+            this.hp.clearAllHighlights();
+            this.updateTreeFiles(context);
+            await this.gitObject.addCommits(this.commitView.getCommits()); //give commits to gitHelper to parse
+            this.hp.loadHighlights(this.gitObject.getGitHighlightData()); //load data to be highlighted
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                this.hp.applyHighlights(editor.document);
             }
+            this.updateTreeFiles(context);
+            if (!this.fileWatcherStarted) {
+                this.fileWatcher();
+                this.fileWatcherStarted = true;
+            }
+            this.commitsOn = true;
         });
         context.subscriptions.push(disposable);
     }
 
     highlightCurrent(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.highlightUncommitedChanges', async () => {
+        return; //Disabled for now
+        let disposable = vscode.commands.registerCommand('GitVision.highlightUncommitedChanges', async () => {
             try {
-                    debugLog("Running command: gmap.highlightUncommitedChanges");
+                    debugLog("Running command: GitVision.highlightUncommitedChanges");
                     //await this.gitObject.addCommits(["Uncommitted changes"]); TODOFIX
                     this.hp.loadHighlights(this.gitObject.getGitHighlightData()); 
                     for (const editor of vscode.window.visibleTextEditors) {
@@ -118,9 +99,10 @@ export class CommandProcessor {
     }
 
     highlightBranch(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.highlightBranch', async () => {
+        return; //Disabled for now
+        let disposable = vscode.commands.registerCommand('GitVision.highlightBranch', async () => {
             try {
-                debugLog("Running command: gmap.highlightBranch");
+                debugLog("Running command: GitVision.highlightBranch");
                 await this.gitObject.addCurrentBranch();
                 this.hp.loadHighlights(this.gitObject.getGitHighlightData());
                 const editor = vscode.window.activeTextEditor;
@@ -138,11 +120,18 @@ export class CommandProcessor {
     }
 
     clearAllHighlights(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.clearAll', () => {
-            debugLog("Running command: gmap.clearAll");
-            this.gitObject.clearHighlightData();
-            this.hp.clearAllHighlights();
-            this.updateTreeFiles(context);
+        let disposable = vscode.commands.registerCommand('GitVision.clearAll', async () => {
+            debugLog("Running command: GitVision.clearAll");
+            let confirmation = await vscode.window.showInformationMessage('Are you sure you want to clear the list?', { modal: true }, 'Yes', 'No');
+
+            if (confirmation === 'Yes') {
+                this.commitRepo.loadCommits(this.commitView.getCommits());
+                this.commitView.clear();
+                this.gitObject.clearHighlightData();
+                this.hp.clearAllHighlights();
+                this.updateTreeFiles(context);
+                this.commitsOn = false;
+            }
         });
         context.subscriptions.push(disposable);
     }
@@ -154,15 +143,15 @@ export class CommandProcessor {
     }
 
     collapseAll(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.collapseAll', async () => {
+        let disposable = vscode.commands.registerCommand('GitVision.collapseAll', async () => {
             vscode.commands.executeCommand('workbench.actions.treeView.gitHighlightsView.collapseAll');
         });
         context.subscriptions.push(disposable);
     }
 
     expandAll(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.expandAll', async () => {
-            debugLog("Running command: gmap.expandAll");
+        let disposable = vscode.commands.registerCommand('GitVision.expandAll', async () => {
+            debugLog("Running command: GitVision.expandAll");
             if (this.fileDataProvider) {
                 //this.fileDataProvider.expandAll();
                 this.fileDataProvider.updateFiles(new Set<string>());
@@ -225,11 +214,33 @@ export class CommandProcessor {
         });
     }
 
-    run(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('gmap.run', async () => {
-            debugLog("Running command: gmap.run");
-            vscode.commands.executeCommand('gmap.highlightCommits');
+    hideHighlights(context: vscode.ExtensionContext) {
+        let disposable = vscode.commands.registerCommand('GitVision.hideHighlights', async () => {
+            debugLog("Running command: GitVision.hideHighlights");
+            this.hp.clearAllHighlights();
+            this.commitsOn = false;
         });
         context.subscriptions.push(disposable);
+    }
+
+    fileWatcher() {
+        vscode.workspace.onDidSaveTextDocument(async e => {
+            if (this.commitsOn) {
+                try {
+                    const uri = e.uri.toString();
+                    const fileName = e.fileName;
+                    console.log(`File saved: ${fileName}`);
+                    if (!await this.gitObject.updateFileHighlights(fileName, uri))
+                        return;
+                    //this.hp.clearAllHighlights();
+                    this.hp.loadFile(uri, this.gitObject.getGitHighlightData()[uri]); //might want to optimize this
+                    this.hp.clearHighlights(e);
+                    this.hp.applyHighlights(e);
+                }
+                catch (error) {
+                    // :(
+                }
+            }
+        });
     }
 }

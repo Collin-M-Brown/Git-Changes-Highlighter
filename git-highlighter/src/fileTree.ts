@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { debugLog, DEBUG } from './library';
 
 class FileTreeItem extends vscode.TreeItem {
     children: { [key: string]: FileTreeItem } | undefined;

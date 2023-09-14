@@ -13,5 +13,5 @@
     "gvision.highlightList": [
         "Collapse tree feature (#9)"
     ],
-    //"gmap.highlightList": ["Reworking gitLog using async... In progress", "simple git and async initial build. Classify GitHelper"],
+    //"GitVision.highlightList": ["Reworking gitLog using async... In progress", "simple git and async initial build. Classify GitHelper"],
 }

@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 
-export const DEBUG = true;
+export const STRESS_DEBUG = false;
+export const DEBUG = false;
 export function debugLog(message: string | undefined) {
     if (DEBUG) {
         console.log(message);
@@ -16,21 +17,27 @@ export function debugLog(message: string | undefined) {
 }
 
 export function getWorkspacePath(): string {
-    let configuredPath = vscode.workspace.getConfiguration('gmap').get<string>('commitListPath'); //TODO: DOUBLE CHECK THIS, MIGHT HAVE DEPRECATED
-    if (!configuredPath || (configuredPath === "")) {
-        if (!vscode.workspace.workspaceFolders) {
-            vscode.window.showErrorMessage(`No path configured or no workspace open`);
-            return '';
-        }
-        configuredPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    //let configuredPath = vscode.workspace.getConfiguration('GitVision').get<string>('commitListPath'); //TODO: DOUBLE CHECK THIS, MIGHT HAVE DEPRECATED
+    //if (!configuredPath || (configuredPath === "")) {
+    //    if (!vscode.workspace.workspaceFolders) {
+    //        vscode.window.showErrorMessage(`No path configured or no workspace open`);
+    //        return '';
+    //    }
+    //    configuredPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    //}
+    //debugLog(`Workspace path: ${configuredPath}`);
+    //return configuredPath;
+
+    if (!vscode.workspace.workspaceFolders) {
+        vscode.window.showErrorMessage(`No path configured or no workspace open`);
+        return '';
     }
-    debugLog(`Workspace path: ${configuredPath}`);
-    return configuredPath;
+    return vscode.workspace.workspaceFolders[0].uri.fsPath;
 }
 
 export function getCommitList(): string[] {
 
-    let branches = vscode.workspace.getConfiguration('gmap').get<string[]>('highlightList');
+    let branches = vscode.workspace.getConfiguration('GitVision').get<string[]>('highlightList');
     if (!branches || (branches.length === 0)) {
         let commitListPath = path.join(getWorkspacePath(), '.vscode/CommitList');
         if (fs.existsSync(commitListPath)) {
