@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
 import { debugLog, DEBUG } from './library';
+import * as _ from 'lodash';
 export class HighlightProcessor {
     private highlights: { [uri: string]: number[] };
     private decorationType:vscode.TextEditorDecorationType;
+    private throttledApplyHighlights = _.throttle(this.applyHighlights, 300, {leading: false});
 
     constructor() {
         this.highlights = {};
@@ -33,7 +35,7 @@ export class HighlightProcessor {
                 }
             }
         
-            this.applyHighlights(e.document);
+            this.throttledApplyHighlights(e.document);
         });
     }
 

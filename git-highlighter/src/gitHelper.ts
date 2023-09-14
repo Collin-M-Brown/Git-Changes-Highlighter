@@ -28,6 +28,7 @@ export class GitProcessor {
     private gitHighlightFiles: Set<string> = new Set();
     private commitHashSet: Set<string> = new Set();
     private commitList: { [key: string]: string } = {};
+    private gitLsFiles: Set<string> = new Set();
 
     private constructor() {
         this.workspacePath = getWorkspacePath();
@@ -46,6 +47,7 @@ export class GitProcessor {
     private async setUp()
     {
         this.gitLogMap = await this.gitLogPromise;
+        this.gitLsFiles = new Set<string>((await this.git.raw(['ls-files'])).split('\n'));
     }
 
     private executeCommand(command: string): string {
@@ -97,6 +99,7 @@ export class GitProcessor {
         }
     }
     
+    //aoijfoaiefw stop doing diff like that, do diff on hash vs head that will save so mu
     // Only want parse files changed to save time.
     private async getChangedFiles(hash: string): Promise<string[]> {
         try {
@@ -107,15 +110,20 @@ export class GitProcessor {
             else {
                 res = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
             }
+
+            if (res.length > 100) {
+                return [];
+            }
     
             // Filter out ignored files
-            const filteredFiles: (string | null)[] = await Promise.all(res.map(async file => {
-                const relativePath = path.relative(process.cwd(), file);
-                return !(await this.checkIgnore(relativePath)) ? file : null;
-            }));
+            //const filteredFiles: (string | null)[] = await Promise.all(res.map(async file => {
+            //    const relativePath = path.relative(process.cwd(), file);
+            //    return !(await this.checkIgnore(relativePath)) ? file : null;
+            //}));
     
             // Remove null values from the array
-            res = filteredFiles.filter((file): file is string => file !== null);
+            //res = filteredFiles.filter((file): file is string => file !== null);
+            res = res.filter(file => this.gitLsFiles.has(file));
     
             debugLog(`Changed files for hash: ${hash}: ${res}`);
             return res;
@@ -146,6 +154,7 @@ export class GitProcessor {
             const hash = this.gitLogMap.get(commit)?.hash;
             if (hash) {
                 this.commitHashSet.add(hash);
+                debugLog(`finding has for commit: ${commit}`);
                 return this.getChangedFiles(`${hash}`);
             }
             return Promise.resolve([]);

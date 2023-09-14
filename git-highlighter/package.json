@@ -127,9 +127,9 @@
         },
         "viewsWelcome": [
             {
-              "view": "CommitRepo",
-              "contents": "No Git repository detected.\n[Open Folder](command:workbench.action.files.openFolder)",
-              "when": "!GitVision.isGitRepository"
+                "view": "CommitRepo",
+                "contents": "No Git repository detected.\n[Open Folder](command:workbench.action.files.openFolder)",
+                "when": "!GitVision.isGitRepository"
             }
         ],
         "menus": {
@@ -140,7 +140,7 @@
                     "group": "navigation@1"
                 },
                 {
-                    "command": "GitVision.highlightCommits", 
+                    "command": "GitVision.highlightCommits",
                     "when": "view == CommitView",
                     "group": "navigation@1"
                 },
@@ -189,7 +189,9 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
+        "@types/lodash": "^4.14.198",
         "ignore": "^5.2.4",
+        "lodash": "^4.17.21",
         "simple-git": "^3.19.1"
     }
 }
