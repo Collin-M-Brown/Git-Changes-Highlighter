@@ -17,6 +17,15 @@
     "contributes": {
         "commands": [
             {
+                "command": "GitVision.openGitRepo",
+                "title": "Open a Git Repository",
+                "icon": {
+                    "light": "./images/run_light.svg",
+                    "dark": "./images/run_dark.svg"
+                },
+                "when": "!isGitRepository"
+            },
+            {
                 "command": "GitVision.highlightCommits",
                 "title": "GitVision: Highlight From List",
                 "icon": {
@@ -116,6 +125,13 @@
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+              "view": "CommitRepo",
+              "contents": "No Git repository detected.\n[Open Folder](command:workbench.action.files.openFolder)",
+              "when": "!GitVision.isGitRepository"
+            }
+        ],
         "menus": {
             "view/title": [
                 {

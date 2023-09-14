@@ -6,11 +6,32 @@ extension.ts->commands.ts -> commitView.ts/fileTree.ts
 */
 import * as vscode from 'vscode';
 import { CommandProcessor } from './commands';
+const fs = require('fs');
+const path = require('path');
 
 let commandProcessor: CommandProcessor;
 
+function isGitRepository() {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+      return Promise.resolve(false);
+    }
+  
+    const gitFolderPath = path.join(workspaceFolders[0].uri.fsPath, '.git');
+    return new Promise(resolve => {
+      fs.access(gitFolderPath, (err: Error | null)  => {
+        resolve(!err);
+      });
+    });
+}
+
 export async function activate(context: vscode.ExtensionContext) {
-    
+    const isRepo = await isGitRepository();
+    vscode.commands.executeCommand('setContext', 'GitVision.isGitRepository', isRepo);
+    if (!isRepo) {
+        return;
+    }
+
     //Initialize Command Processor
     if (!commandProcessor) {
         commandProcessor = await CommandProcessor.create(context);
@@ -51,66 +72,7 @@ export async function activate(context: vscode.ExtensionContext) {
     
     //Display Tree in sidebar view
     commandProcessor.updateTreeFiles(context);
-
-/*
-    let disposable = vscode.commands.registerCommand('GitVision.openColorPicker', () => {
-        // Create and show a new webview
-        const panel = vscode.window.createWebviewPanel(
-            'colorPicker',
-            'Color Picker',
-            vscode.ViewColumn.One,
-            
-            {}
-        );
-        panel.webview.html = getWebviewContent();
-        panel.webview.onDidReceiveMessage(
-            message => {
-                console.log('Message received: ', message);  // Debug log
-                switch (message.command) {
-                    case 'colorSelected':
-                        console.log(`Color selected: ${message.color}`);
-                        vscode.workspace.getConfiguration('GitVision').update('highlightColor', message.color, vscode.ConfigurationTarget.Global);
-                        return;
-                }
-            },
-            undefined,
-            context.subscriptions
-        );
-    });
-    context.subscriptions.push(disposable);
-    */
-    
 }
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
-/*
-function getWebviewContent() {
-    return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline';">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Color Picker</title>
-        </head>
-        <body>
-            <input type="color" id="colorPicker" onchange="sendColor()">
-            
-            <script>
-                const vscode = acquireVsCodeApi();
-                
-                function sendColor() {
-                    const color = document.getElementById('colorPicker').value;
-                    console.log('Color selected in webview: ' + color);
-                    vscode.postMessage({
-                        command: 'colorSelected',
-                        color: color
-                    });
-                }
-            </script>
-        </body>
-        </html>
-    `;
-}*/
