@@ -1,4 +1,5 @@
-# GitVision Alpha 
+# GitVision Alpha
+Highlight git blame data for multiple commits at once.
 ## Purpose
 This extension aims to provide visiual aid for viewing past commits and branches merged when in a git repository. It is specifically designed for large collaborative repositories.
 For an example; if you have multiple commits for a single feature merged to the repository, and you wish to view all the changes you have made on that feature, you can simply add all the relevant commits to a list, and then this extension will highlight all the lines that were changed in those commits.

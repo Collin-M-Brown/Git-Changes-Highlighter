@@ -12,11 +12,9 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: s
     }
     
     getChildren(element?: { key: string, value: string }): Thenable<{ key: string, value: string }[]> {
-        if (element) {
+        if (element) 
             return Promise.resolve([]);
-        } else {
-            return Promise.resolve(Object.entries(this.commits).sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime()).map(([key, value]) => ({ key, value })));
-        }
+        return Promise.resolve(Object.entries(this.commits).sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime()).map(([key, value]) => ({ key, value })));
     }
     
     addCommit(commit: { key: string, value: string }) {
@@ -34,9 +32,8 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: s
     }
 
     loadCommits(newCommits: { [key: string]: string }) {
-        for (let key in newCommits) {
+        for (let key in newCommits)
             this.commits[key] = newCommits[key];
-        }
         this._onDidChangeTreeData.fire();
     }
 

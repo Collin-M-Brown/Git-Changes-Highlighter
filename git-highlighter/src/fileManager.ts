@@ -28,7 +28,7 @@ import simpleGit, { SimpleGit, DefaultLogFields } from 'simple-git';
 const fs = require('fs');
 const path = require('path');
 
-export class GitProcessor {
+export class FileManager {
     private workspacePath: string;
     private git: SimpleGit;
     private gitLogPromise: Promise<Map<string, DefaultLogFields>>;
@@ -48,7 +48,7 @@ export class GitProcessor {
     }
 
     static async create() {
-        const processor = new GitProcessor();
+        const processor = new FileManager();
         await processor.setUp();
         return processor;
     }
@@ -78,9 +78,8 @@ export class GitProcessor {
             return result.trim() !== '';
         } catch (err) {
             if (err instanceof Error) {
-                if (err.message.includes('not ignored')) {
+                if (err.message.includes('not ignored'))
                     return false;
-                }
             }
             throw err;
         }
@@ -112,16 +111,13 @@ export class GitProcessor {
     private async getChangedFiles(hash: string, commit: string): Promise<string[]> {
         try {
             let res: string[];
-            if (hash === '0000000000000000000000000000000000000000') {
+            if (hash === '0000000000000000000000000000000000000000')
                 res = (await this.git.raw(['diff', '--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
-            }
-            else {
+            else
                 res = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
-            }
 
-            if (res.length > 100) {
+            if (res.length > 100)
                 return [];
-            }
     
             // Filter out ignored files
             res = res.filter(file => this.gitLsFiles.has(file));
@@ -175,9 +171,8 @@ export class GitProcessor {
         
         if (DEBUG) {
             debugLog(`==Files with changes==`);
-            for (let file of this.gitHighlightFiles) {
+            for (let file of this.gitHighlightFiles)
                 debugLog(`${file}`);
-            }
             debugLog(`======================`);
         }
 
@@ -224,11 +219,9 @@ export class GitProcessor {
             const blameFile: string[] = (await this.git.raw(['blame', `-l`, `${file}`])).split('\n');
             if (uri === "")
                 uri = vscode.Uri.file(path.join(this.workspacePath, file)).toString();
-
-            //console.log(`uri: ${uri}`);
-            if (blameFile.length === 0) {
+            if (blameFile.length === 0)
                 return false;
-            }
+
             this.gitHighlightData[uri] = [];
             for (let lineNumber = 0; lineNumber < blameFile.length; lineNumber++) {
                 let lineHash = blameFile[lineNumber].split(' ')[0].trim();
@@ -236,7 +229,6 @@ export class GitProcessor {
                 
                 if (this.commitHashSet.has(lineHash)) {
                     this.gitHighlightData[uri].push(lineNumber);
-                    //console.log(`Found hash: ${uri} on line ${lineNumber}`);
                     foundInHashSet = true;
                 }
             }
@@ -290,9 +282,8 @@ export class GitProcessor {
     saveState(context: vscode.ExtensionContext) {
         //look into this for maintaining state
         let count = context.globalState.get<number>('count');
-        if (count === undefined) {
+        if (count === undefined)
             count = 0;
-        }
         debugLog(`Count is ${count}`);
         context.globalState.update('count', count + 1);
     }

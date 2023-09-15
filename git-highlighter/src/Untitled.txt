@@ -43,9 +43,9 @@ Blame file: /Users/cb/Git/Git-Changes-Highlighter/GitVision/GitVision/src/extens
 extensionHostProcess.js:108
 Completed for command "git ls-files GitVision/src/extension.ts": 0
 extensionHostProcess.js:108
-Blame file: /Users/cb/Git/Git-Changes-Highlighter/GitVision/GitVision/src/gitHelper.ts
+Blame file: /Users/cb/Git/Git-Changes-Highlighter/GitVision/GitVision/src/fileManager.ts
 extensionHostProcess.js:108
-Completed for command "git ls-files GitVision/src/gitHelper.ts": 0
+Completed for command "git ls-files GitVision/src/fileManager.ts": 0
 extensionHostProcess.js:108
 Blame file: /Users/cb/Git/Git-Changes-Highlighter/GitVision/GitVision/package.json
 extensionHostProcess.js:108

@@ -81,16 +81,14 @@ export class HighlightProcessor {
             const line = editor.selection.active.line;
             const uri = editor.document.uri.toString();
         
-            if (!this.highlights[uri]) {
+            if (!this.highlights[uri])
                 this.highlights[uri] = [];
-            }
 
             const index =this.highlights[uri].indexOf(line);
-            if (index === -1) {
+            if (index === -1)
                 this.highlights[uri].push(line);
-            } else {
+            else
                 this.highlights[uri].splice(index, 1);
-            }
             this.applyHighlights(editor.document);
         }
     }
@@ -114,17 +112,15 @@ export class HighlightProcessor {
                 if (lineCount > 0) {
                     const line = e.document.lineAt(change.range.start).lineNumber + 1;
                     const i = this.binarySearch(this.highlights[uri], line);
-                    for (let j = i; j < this.highlights[uri].length; j++) {
+                    for (let j = i; j < this.highlights[uri].length; j++)
                         this.highlights[uri][j] += lineCount;
-                    }
                 } else if (change.range.isSingleLine === false) {
                     const startLine = change.range.start.line;
                     const endLine = change.range.end.line;
                     const linesRemoved = endLine - startLine;
                     const i = this.binarySearch(this.highlights[uri], startLine);
-                    for (let j = i; j < this.highlights[uri].length; j++) {
+                    for (let j = i; j < this.highlights[uri].length; j++)
                         this.highlights[uri][j] -= Math.min(this.highlights[uri][j] - startLine, linesRemoved);
-                    }
                 }
             }
     
@@ -137,13 +133,12 @@ export class HighlightProcessor {
         let right = array.length - 1;
         while (left <= right) {
             const mid = left + Math.floor((right - left) / 2);
-            if (array[mid] === target) {
+            if (array[mid] === target)
                 return mid;
-            } else if (array[mid] < target) {
+            else if (array[mid] < target)
                 left = mid + 1;
-            } else {
+            else
                 right = mid - 1;
-            }
         }
         return left;
     }

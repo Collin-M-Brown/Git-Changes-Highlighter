@@ -26,7 +26,7 @@ class FileTreeItem extends vscode.TreeItem {
     }
 }
 
-export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
+export class fileTree implements vscode.TreeDataProvider<FileTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<FileTreeItem | undefined> = new vscode.EventEmitter<FileTreeItem | undefined>();
     readonly onDidChangeTreeData: vscode.Event<FileTreeItem | undefined> = this._onDidChangeTreeData.event;
     //private collapseState: vscode.TreeItemCollapsibleState;
@@ -58,7 +58,7 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
                 if (!(part in subtree)) {
                     let isDirectory = (i < parts.length - 1) || fs.statSync(path.join(this.workspaceRoot, filePath)).isDirectory();
                     let resourceUri = vscode.Uri.file(path.join(this.workspaceRoot, ...parts.slice(0, i + 1)));
-                    //debugLog(`Tree part: ${part}, resource: ${resourceUri}`);
+                    console.log(`Tree part: ${part}, resource: ${resourceUri}`);//TODO make the file size the description so that it shows how many changes.
                     subtree[part] = new FileTreeItem(part, isDirectory ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None, resourceUri, {});
                 }
                 subtree = subtree[part].children || {};
@@ -74,11 +74,10 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
     }
 
     getChildren(element?: FileTreeItem): Thenable<FileTreeItem[]> {
-        if (element) {
+        if (element) 
             return Promise.resolve(Object.values(element.children || {}));
-        } else {
-            return Promise.resolve(this.fileTree ? [this.fileTree] : []);
-        }
+        return Promise.resolve(this.fileTree ? [this.fileTree] : []);
+        
     }
 
     updateFiles(newFiles: Set<string>): void {

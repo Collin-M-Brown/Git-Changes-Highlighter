@@ -2,7 +2,7 @@
 Code flow: 
                           -> highlight.ts 
 extension.ts->commands.ts -> commitView.ts/fileTree.ts
-                          -> gitHelper.ts
+                          -> fileManager.ts
 */
 import * as vscode from 'vscode';
 import { CommandProcessor } from './commands';
@@ -27,14 +27,12 @@ function isGitRepository() {
 export async function activate(context: vscode.ExtensionContext) {
     const isRepo = await isGitRepository();
     vscode.commands.executeCommand('setContext', 'GitVision.isGitRepository', isRepo);
-    if (!isRepo) {
+    if (!isRepo)
         return;
-    }
 
     //Initialize Command Processor
-    if (!commandProcessor) {
+    if (!commandProcessor) 
         commandProcessor = await CommandProcessor.create(context);
-    }
     context.subscriptions.push(vscode.commands.registerCommand('GitVision.openSettings', () => {
         vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision');
     }));
