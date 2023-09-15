@@ -17,20 +17,20 @@ export class HighlightProcessor {
         this.fileWatcher();
     }
 
-    loadHighlights(newHighlights: {[uri: string]: number[]}) {
-        for (const uri in newHighlights) {
-            if (newHighlights.hasOwnProperty(uri)) {
-                const lines = newHighlights[uri];
+    loadHighlights(newHighlights: {[fileName: string]: number[]}) {
+        for (const fileName in newHighlights) {
+            if (newHighlights.hasOwnProperty(fileName)) {
+                const lines = newHighlights[fileName];
                 // Clear existing highlights for this file
-                this.highlights[uri] = [];
-                this.highlights[uri].push(...lines);
+                this.highlights[fileName] = [];
+                this.highlights[fileName].push(...lines);
             }
         }
     }
 
-    loadFile(uri:string, lines:number[]) {
-        console.log(`Loading file: ${uri}`);
-        this.highlights[uri] = lines;
+    loadFile(fileName: string, lines:number[]) {
+        console.log(`Loading file: ${fileName}`);
+        this.highlights[fileName] = lines;
     }
 
     clearHighlights(document: vscode.TextDocument) {
@@ -47,9 +47,9 @@ export class HighlightProcessor {
     applyHighlights(document: vscode.TextDocument) {
         const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
         if (editor) {
-            const uri = document.uri.toString();
+            const file = document.fileName;
             
-            const lines =this.highlights[uri] || [];
+            const lines =this.highlights[file] || [];
             //console.log(`applying highlights to: ${uri}`);
             //console.log(`Lines: ${lines}`);
             const color = vscode.workspace.getConfiguration('GitVision').get('highlightColor');
@@ -79,18 +79,16 @@ export class HighlightProcessor {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const line = editor.selection.active.line;
-            const uri = editor.document.uri.toString();
+            const file = editor.document.fileName;
         
-            if (!this.highlights[uri]) {
-                this.highlights[uri] = [];
-            }
+            if (!this.highlights[file])
+                this.highlights[file] = [];
 
-            const index =this.highlights[uri].indexOf(line);
-            if (index === -1) {
-                this.highlights[uri].push(line);
-            } else {
-                this.highlights[uri].splice(index, 1);
-            }
+            const index =this.highlights[file].indexOf(line);
+            if (index === -1)
+                this.highlights[file].push(line);
+            else
+                this.highlights[file].splice(index, 1);
             this.applyHighlights(editor.document);
         }
     }
@@ -104,27 +102,26 @@ export class HighlightProcessor {
         vscode.workspace.onDidChangeTextDocument(e => {
             if (!vscode.workspace.getConfiguration('GitVision').get('enableRealtimeHighlighting'))
                 return;
-            const uri = e.document.uri.toString();
-            if (!this.highlights[uri]) { return; }
+            const file = e.document.fileName;
+            console.log(`onDidChangeTextDocument ${file}`);
+            if (!this.highlights[file]) { return; }
             
-            this.highlights[uri].sort((a, b) => a - b);
+            this.highlights[file].sort((a, b) => a - b);
             
             for (const change of e.contentChanges) {
                 const lineCount = (change.text.match(/\n/g) || []).length;
                 if (lineCount > 0) {
                     const line = e.document.lineAt(change.range.start).lineNumber + 1;
-                    const i = this.binarySearch(this.highlights[uri], line);
-                    for (let j = i; j < this.highlights[uri].length; j++) {
-                        this.highlights[uri][j] += lineCount;
-                    }
+                    const i = this.binarySearch(this.highlights[file], line);
+                    for (let j = i; j < this.highlights[file].length; j++)
+                        this.highlights[file][j] += lineCount;
                 } else if (change.range.isSingleLine === false) {
                     const startLine = change.range.start.line;
                     const endLine = change.range.end.line;
                     const linesRemoved = endLine - startLine;
-                    const i = this.binarySearch(this.highlights[uri], startLine);
-                    for (let j = i; j < this.highlights[uri].length; j++) {
-                        this.highlights[uri][j] -= Math.min(this.highlights[uri][j] - startLine, linesRemoved);
-                    }
+                    const i = this.binarySearch(this.highlights[file], startLine);
+                    for (let j = i; j < this.highlights[file].length; j++)
+                        this.highlights[file][j] -= Math.min(this.highlights[file][j] - startLine, linesRemoved);
                 }
             }
     
@@ -137,13 +134,12 @@ export class HighlightProcessor {
         let right = array.length - 1;
         while (left <= right) {
             const mid = left + Math.floor((right - left) / 2);
-            if (array[mid] === target) {
+            if (array[mid] === target)
                 return mid;
-            } else if (array[mid] < target) {
+            else if (array[mid] < target)
                 left = mid + 1;
-            } else {
+            else
                 right = mid - 1;
-            }
         }
         return left;
     }

@@ -11,13 +11,14 @@ class FileTreeItem extends vscode.TreeItem {
         public resourceUri: vscode.Uri,
         public isRoot: boolean,
         children?: { [key: string]: FileTreeItem },
+        public description?: string,
     ) {
         super(label, collapsibleState);
         this.tooltip = `${this.label}`;
-        this.description = this.label;
+        this.description = description || this.label;
         this.children = children;
     
-        // If this is a root node, generate a unique ID for it each time it's created. Pretty much the only way i've been able to make this tree expand.
+        // If this is a root node, need to generate a unique ID for it each time it's created.
         if (isRoot) {
             this.id = `${label}-${Date.now()}`;
         } else {
@@ -34,9 +35,10 @@ class FileTreeItem extends vscode.TreeItem {
     }
 }
 
-export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
+export class fileTree implements vscode.TreeDataProvider<FileTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<FileTreeItem | undefined> = new vscode.EventEmitter<FileTreeItem | undefined>();
     readonly onDidChangeTreeData: vscode.Event<FileTreeItem | undefined> = this._onDidChangeTreeData.event;
+    private changeCountMap: Map<string, number> = new Map<string, number>();
     //private collapseState: vscode.TreeItemCollapsibleState;
 
     private fileTree: FileTreeItem | undefined;
@@ -58,23 +60,31 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
     buildFileTree() {
         let tree: { [key: string]: FileTreeItem } = {};
         for (let filePath of this.filesChanged) {
+            filePath = path.relative(this.workspaceRoot, filePath);
             let parts = filePath.split(path.sep);
             let subtree = tree;
-
+    
             for (let i = 0; i < parts.length; i++) {
                 let part = parts[i];
                 if (!(part in subtree)) {
                     let isDirectory = (i < parts.length - 1) || fs.statSync(path.join(this.workspaceRoot, filePath)).isDirectory();
                     let resourceUri = vscode.Uri.file(path.join(this.workspaceRoot, ...parts.slice(0, i + 1)));
-                    //debugLog(`Tree part: ${part}, resource: ${resourceUri}`);
-                    subtree[part] = new FileTreeItem(part, isDirectory ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None, resourceUri, false, {});
+                    let changeCount = this.changeCountMap.get(resourceUri.fsPath) || 0;
+                    let description = !isDirectory ? `(${changeCount})` : undefined;
+                    subtree[part] = new FileTreeItem(
+                        part, 
+                        isDirectory ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None, 
+                        resourceUri, 
+                        false, 
+                        {}, 
+                        description,
+                    );
                 }
                 subtree = subtree[part].children || {};
             }
         }
         let rootLabel = path.basename(this.workspaceRoot);
-        // Pass true as the fourth argument to the FileTreeItem constructor for the root node
-        this.fileTree = new FileTreeItem("Highlights", vscode.TreeItemCollapsibleState.Expanded, vscode.Uri.file(this.workspaceRoot), true, tree);
+        this.fileTree = new FileTreeItem(rootLabel, vscode.TreeItemCollapsibleState.Expanded, vscode.Uri.file(this.workspaceRoot), true, tree);
     }
 
     getTreeItem(element: FileTreeItem): vscode.TreeItem {
@@ -89,8 +99,9 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
         }
     }
 
-    updateFiles(newFiles: Set<string>): void {
-        this.filesChanged = newFiles;
+    updateFiles(newFiles: Map<string, number>): void {
+        this.changeCountMap = newFiles;
+        this.filesChanged = new Set<string>(newFiles.keys());
         this.buildFileTree();
         this._onDidChangeTreeData.fire(undefined);
     }
