@@ -141,6 +141,11 @@
                     "group": "navigation@1"
                 },
                 {
+                    "command": "GitVision.expandAll",
+                    "when": "view == gitHighlightsView",
+                    "group": "navigation@2"
+                },
+                {
                     "command": "GitVision.highlightCommits",
                     "when": "view == CommitView",
                     "group": "navigation@1"

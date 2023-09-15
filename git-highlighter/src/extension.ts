@@ -6,35 +6,34 @@ extension.ts->commands.ts -> commitView.ts/fileTree.ts
 */
 import * as vscode from 'vscode';
 import { CommandProcessor } from './commands';
+import { exec } from 'child_process';
+
 const fs = require('fs');
 const path = require('path');
 let commandProcessor: CommandProcessor;
 
-function isGitRepository() {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) {
-        return Promise.resolve(false);
-    }
-
-    const gitFolderPath = path.join(workspaceFolders[0].uri.fsPath, '.git');
-    return new Promise(resolve => {
-        fs.access(gitFolderPath, (err: Error | null) => {
-            resolve(!err);
+function isGitRepository(): Promise<boolean> {
+    return new Promise((resolve) => {
+        exec('git rev-parse --is-inside-work-tree', (err, stdout) => {
+            if (err) {
+                resolve(false);
+            } else {
+                resolve(stdout.trim() === 'true');
+            }
         });
     });
 }
 
 export async function activate(context: vscode.ExtensionContext) {
-    const isRepo = await isGitRepository();
+    const isRepo = isGitRepository();
+    console.log(`GitVision: ${isRepo}`);
     vscode.commands.executeCommand('setContext', 'GitVision.isGitRepository', isRepo);
-    if (!isRepo) {
+    if (!isRepo)
         return;
-    }
 
     //Initialize Command Processor
-    if (!commandProcessor) {
+    if (!commandProcessor)
         commandProcessor = await CommandProcessor.create(context);
-    }
     context.subscriptions.push(vscode.commands.registerCommand('GitVision.openSettings', () => {
         vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision');
     }));

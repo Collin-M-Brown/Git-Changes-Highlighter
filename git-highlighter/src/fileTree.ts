@@ -9,13 +9,21 @@ class FileTreeItem extends vscode.TreeItem {
         public label: string,
         public collapsibleState: vscode.TreeItemCollapsibleState,
         public resourceUri: vscode.Uri,
+        public isRoot: boolean,
         children?: { [key: string]: FileTreeItem },
     ) {
         super(label, collapsibleState);
         this.tooltip = `${this.label}`;
         this.description = this.label;
         this.children = children;
-
+    
+        // If this is a root node, generate a unique ID for it each time it's created. Pretty much the only way i've been able to make this tree expand.
+        if (isRoot) {
+            this.id = `${label}-${Date.now()}`;
+        } else {
+            this.id = `${label}-${resourceUri.fsPath}`;
+        }
+    
         if (this.collapsibleState === vscode.TreeItemCollapsibleState.None) {
             this.command = {
                 command: 'vscode.open',
@@ -59,14 +67,14 @@ export class FileDataProvider implements vscode.TreeDataProvider<FileTreeItem> {
                     let isDirectory = (i < parts.length - 1) || fs.statSync(path.join(this.workspaceRoot, filePath)).isDirectory();
                     let resourceUri = vscode.Uri.file(path.join(this.workspaceRoot, ...parts.slice(0, i + 1)));
                     //debugLog(`Tree part: ${part}, resource: ${resourceUri}`);
-                    subtree[part] = new FileTreeItem(part, isDirectory ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None, resourceUri, {});
+                    subtree[part] = new FileTreeItem(part, isDirectory ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None, resourceUri, false, {});
                 }
                 subtree = subtree[part].children || {};
             }
         }
         let rootLabel = path.basename(this.workspaceRoot);
-        this.fileTree = new FileTreeItem("Highlights", vscode.TreeItemCollapsibleState.Expanded, vscode.Uri.file(this.workspaceRoot), tree);
-        
+        // Pass true as the fourth argument to the FileTreeItem constructor for the root node
+        this.fileTree = new FileTreeItem("Highlights", vscode.TreeItemCollapsibleState.Expanded, vscode.Uri.file(this.workspaceRoot), true, tree);
     }
 
     getTreeItem(element: FileTreeItem): vscode.TreeItem {

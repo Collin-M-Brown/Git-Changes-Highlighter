@@ -24,8 +24,8 @@ export class CommandProcessor {
         this.hp = new HighlightProcessor();
         this.commitView = new CommitListViewProvider();
         this.commitRepo = new CommitListViewProvider();
-        this.commitViewDropdown = vscode.window.createTreeView('CommitView', { treeDataProvider: this.commitView});
-        this.commitRepoDropdown = vscode.window.createTreeView('CommitRepo', { treeDataProvider: this.commitRepo});
+        this.commitViewDropdown = vscode.window.createTreeView('CommitView', { treeDataProvider: this.commitView });
+        this.commitRepoDropdown = vscode.window.createTreeView('CommitRepo', { treeDataProvider: this.commitRepo });
 
         context.subscriptions.push(this.commitViewDropdown);
         context.subscriptions.push(this.commitRepoDropdown);
@@ -35,13 +35,12 @@ export class CommandProcessor {
         const commandProcessor = new CommandProcessor(context);
         commandProcessor.gitObject = await GitProcessor.create();
         if (STRESS_DEBUG)
-            commandProcessor.commitView.loadCommits(commandProcessor.gitObject.getCommitList());  
+            commandProcessor.commitView.loadCommits(commandProcessor.gitObject.getCommitList());
         else
             commandProcessor.commitRepo.loadCommits(commandProcessor.gitObject.getCommitList());
         vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
-            for (const editor of editors) {
+            for (const editor of editors)
                 commandProcessor.hp.applyHighlights(editor.document);
-            }
         });
         return commandProcessor;
     }
@@ -65,9 +64,8 @@ export class CommandProcessor {
             await this.gitObject.addCommits(this.commitView.getCommits()); //give commits to gitHelper to parse
             this.hp.loadHighlights(this.gitObject.getGitHighlightData()); //load data to be highlighted
             const editor = vscode.window.activeTextEditor;
-            if (editor) {
+            if (editor)
                 this.hp.applyHighlights(editor.document);
-            }
             this.updateTreeFiles(context);
             if (!this.fileWatcherStarted) {
                 this.fileWatcher();
@@ -82,20 +80,20 @@ export class CommandProcessor {
         return; //Disabled for now
         let disposable = vscode.commands.registerCommand('GitVision.highlightUncommitedChanges', async () => {
             try {
-                    debugLog("Running command: GitVision.highlightUncommitedChanges");
-                    //await this.gitObject.addCommits(["Uncommitted changes"]); TODOFIX
-                    this.hp.loadHighlights(this.gitObject.getGitHighlightData()); 
-                    for (const editor of vscode.window.visibleTextEditors) {
-                        this.hp.applyHighlights(editor.document);
-                    }
-                    this.updateTreeFiles(context);
-                } catch (error) {
-                    vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
-                    exit(1);
+                debugLog("Running command: GitVision.highlightUncommitedChanges");
+                //await this.gitObject.addCommits(["Uncommitted changes"]); TODOFIX
+                this.hp.loadHighlights(this.gitObject.getGitHighlightData());
+                for (const editor of vscode.window.visibleTextEditors) {
+                    this.hp.applyHighlights(editor.document);
                 }
-            });
-        
-            context.subscriptions.push(disposable);
+                this.updateTreeFiles(context);
+            } catch (error) {
+                vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
+                exit(1);
+            }
+        });
+
+        context.subscriptions.push(disposable);
     }
 
     highlightBranch(context: vscode.ExtensionContext) {
@@ -115,7 +113,7 @@ export class CommandProcessor {
                 exit(1);
             }
         });
-    
+
         context.subscriptions.push(disposable);
     }
 
@@ -137,9 +135,8 @@ export class CommandProcessor {
     }
 
     updateTreeFiles(context: vscode.ExtensionContext) {
-        if (this.fileDataProvider) {
+        if (this.fileDataProvider)
             this.fileDataProvider.updateFiles(this.gitObject.getHighlightFiles());
-        }
     }
 
     collapseAll(context: vscode.ExtensionContext) {
@@ -155,7 +152,7 @@ export class CommandProcessor {
             if (this.fileDataProvider) {
                 //this.fileDataProvider.expandAll();
                 this.fileDataProvider.updateFiles(new Set<string>());
-                
+
                 // Add a delay before adding the highlight data back
                 setTimeout(() => {
                     this.updateTreeFiles(context);
@@ -238,7 +235,7 @@ export class CommandProcessor {
                     this.hp.applyHighlights(e);
                 }
                 catch (error) {
-                    // :(
+                    // Probably tried to save a file not in the git repo. Bad practice to ignore but lets just ignore it.
                 }
             }
         });
