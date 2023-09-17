@@ -17,6 +17,7 @@ git diff <hash>~..<hash>
     : Finds all the differences between the hash and its parent commit
     : This one is better for my extension because it will only show files that the hash might appear in
     : There might still be empty diffs because a commits changes could have been overwritten.
+
 git diff <hash>..HEAD
 */
 
@@ -122,7 +123,7 @@ export class FileManager {
             else if (hash === this.headCommit)
                 res = (await this.git.raw(['diff', '--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
             else
-                res = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+                res = (await this.git.raw(['diff', '--relative', `${hash}~..HEAD`, '--find-renames=100%', '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
 
             if (res.length > 100)
                 return [];
@@ -158,7 +159,7 @@ export class FileManager {
             const hash = this.gitLogMap.get(commit)?.hash;
             if (hash) {
                 this.commitHashSet.add(hash);
-                console.log(`finding hash for commit: ${commit}`);
+                console.log(`finding hash for commit: ${commit}, ${hash}`);
                 return this.getChangedFiles(`${hash}`, commit);
             }
             return Promise.resolve([]);
@@ -203,7 +204,7 @@ export class FileManager {
     */
     private async fillGitHighlightData() {
         for (let file of this.gitHighlightFiles) {
-            //debugLog(`finding hash data for file: ${file}`);
+            debugLog(`finding hash data for file: ${file}`);
             file = path.join(this.workspacePath, file);
             const count = (await this.updateFileHighlights(file));
             if (count) 

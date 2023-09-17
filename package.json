@@ -106,8 +106,8 @@
             "activitybar": [
                 {
                     "id": "GitVision",
-                    "title": "Tree View",
-                    "icon": "$(file-directory)"
+                    "title": "Git Vision",
+                    "icon": "$(eye)"
                 }
             ]
         },
