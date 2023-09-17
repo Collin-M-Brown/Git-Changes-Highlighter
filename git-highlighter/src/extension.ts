@@ -9,9 +9,28 @@ import { CommandProcessor } from './commands';
 import { execSync } from 'child_process';
 import { getWorkspacePath } from './library';
 
-const fs = require('fs');
-const path = require('path');
 let commandProcessor: CommandProcessor;
+
+//function startProfile() {
+//    console.log(process.cwd());
+//    // Start profiling
+//    const profile = profiler.startProfiling('myProfile', true);
+//    
+//    // Stop profiling after 5 seconds
+//    setTimeout(() => {
+//        profile.stop();
+//    
+//        // Export the profile data
+//        profile.export((error: Error | null, result: string | null) => {
+//            if (error) {
+//                console.error("Error exporting profile: ", error);
+//            } else {
+//                fs.writeFileSync('myProfile.cpuprofile', result as string);
+//            }
+//            profile.delete(); // Delete the profile
+//        });
+//    }, 5000);
+//}
 
 function isGitRepo(command: string): boolean {
     try {
@@ -23,6 +42,7 @@ function isGitRepo(command: string): boolean {
 }
 
 export async function activate(context: vscode.ExtensionContext) {
+    //startProfile();
     const isRepo = isGitRepo("git rev-parse --is-inside-work-tree");
     console.log(`GitVision: ${isRepo}`);
     vscode.commands.executeCommand('setContext', 'GitVision.isGitRepository', isRepo);

@@ -113,7 +113,6 @@ export class FileManager {
         }
     }
     
-    //aoijfoaiefw stop doing diff like that, do diff on hash vs head that will save so mu
     // Only want parse files changed to save time.
     private async getChangedFiles(hash: string, commit: string): Promise<string[]> {
         try {
