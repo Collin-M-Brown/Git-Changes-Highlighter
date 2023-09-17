@@ -1,11 +1,12 @@
 {
     "repository": {
         "type": "git",
-        "url": "https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/GitVision"
+        "url": "https://github.com/Collin-M-Brown/Git-Vision"
     },
     "name": "GitVision",
-    "displayName": "Git Highlighter",
-    "description": "",
+    "displayName": "Git Vision",
+    "description": "Highlight git blame data for multiple commits at once.",
+    "publisher": "collin-m-brown",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.81.0"

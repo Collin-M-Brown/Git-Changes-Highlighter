@@ -137,8 +137,9 @@ export class CommandProcessor {
     }
 
     updateTreeFiles(context: vscode.ExtensionContext) {
-        if (this.fileTree)
+        if (this.fileTree) {
             this.fileTree.updateFiles(this.fileManager.getHighlightFiles());
+        }
     }
 
     collapseAll(context: vscode.ExtensionContext) {

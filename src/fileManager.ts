@@ -282,7 +282,7 @@ export class FileManager {
         this.gitHighlightData = {};
         this.gitHighlightFiles = new Set();
         this.commitHashSet = new Set();
-        //this.commitList = {};
+        this.fileCounter = new Map();
     }
 
     saveState(context: vscode.ExtensionContext) {
