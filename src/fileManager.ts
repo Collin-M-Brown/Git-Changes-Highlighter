@@ -122,8 +122,10 @@ export class FileManager {
                 res = (await this.git.raw(['diff', '--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
             else if (hash === this.headCommit)
                 res = (await this.git.raw(['diff', '--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
-            else
+            else {
                 res = (await this.git.raw(['diff', '--relative', `${hash}~..HEAD`, '--find-renames=100%', '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+                res = res.concat((await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean));
+            }
 
             if (res.length > 100)
                 return [];
