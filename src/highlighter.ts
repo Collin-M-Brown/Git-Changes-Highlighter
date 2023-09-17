@@ -60,7 +60,9 @@ export class HighlightProcessor {
                 this.decorationType = vscode.window.createTextEditorDecorationType({
                     backgroundColor: color as string,
                     isWholeLine: true,
-                    //overviewRulerColor: color as string,
+                    overviewRulerColor: 'rgb(79, 190, 255)',
+                    overviewRulerLane: vscode.OverviewRulerLane.Full,
+                    
                 });
             } catch(error) {
                 console.error('Error while creating decoration type:', error);
