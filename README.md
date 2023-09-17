@@ -1,38 +1,38 @@
-# PARENT REPOSITORY: See gitVision
+# GitVision
+Highlight git blame data for multiple commits at once.
+## Purpose
+This extension aims to provide visiual aid for viewing past commits and branches merged when in a git repository. It is specifically designed for large collaborative repositories.
+For an example; if you have multiple commits for a single feature merged to the repository, and you wish to view all the changes you have made on that feature, you can simply add all the relevant commits to a list, and then this extension will highlight all the lines that were changed in those commits.
 
-# Git-Changes-Highlighter
+This extension serves a similar purpose to a git heatmap but allows for tracking multiple commits at once.
+## Requirements
 
-# TODO
-~~* Fix: not including start of line when highlighting ranges~~
+vscode 1.82.2
 
-~~* Add option to show current changes~~
+## Extension Settings
 
-~~* add option to highlight just the branch~~
+Enable Real time highlighting
+Highlight color
 
-~~* Debug async fails on highlights commits and current~~
+## Known Issues
 
-~~* Debug lines not getting added for branches.~~
+* The highlights attempt to adapt to any current changes you make. But there are some cases
+    where deleting and undoing changes can cause the highlights to be stack on top of each other.
 
-* Debug lines getting darker when added mutliple times
+* Merged branches that did not have the commits squashed will not show any changes when added to commit list. You will need to add the commits for the branch individually. If the merged branch was squashed, this will not be an issue.
 
-~~* Make each command seperate.~~
+* Tracking highlights and real time can cause flickering. I will add an option to enable or disable
 
-~~* Add option to remove a commit.~~
-    ~~* Maybe change logic so that we keep a hash set, and set highlights when window is opened~~
+* Needs testing with larger repositories.
+## Release Notes
 
-~~* start with basic toggle option~~
+Temp
 
-~~* might need to check if highlight list is changed or not~~
+### 1.0.0
 
-~~* Add rightclick options to editor view~~
-    ~~* add right click option to line in editor for adding commits to highlight list~~
-   ~~ * add right click option to remove from highlight list~~
-    ~~* add right click option to add from source control~~
-   ~~* add right click option to toggle highlights on or off (should save state to prevent reprocessing)~~
+Initial release of Git Vision
 
-~~* and files watched in folder view~~
 
-* add saved highlights per branch
+## For more information
 
-* todo if a file is changed but does not have any changes
-
+https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/git-highlighter
