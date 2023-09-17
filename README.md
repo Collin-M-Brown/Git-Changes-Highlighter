@@ -26,8 +26,6 @@ Highlight color
 
 ## Notes
 * Needs testing with larger repositories.
-
-* This extension uses git blame to track commits. Things like moving entire folders can change the blame of every line in the folder.
   
 ## Release Notes
 
