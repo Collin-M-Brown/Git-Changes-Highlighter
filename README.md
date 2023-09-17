@@ -35,11 +35,16 @@ Highlight color
 
 0.0.2 Initial release
 
+0.0.3 Add scroll bar decoration
+
 ### 1.0.0
 
 Initial release of Git Vision
 
+### TODO
+* Add way to search/filter commit list to find commits easier
 
+* Add feature to save last used commit watch list so people don't have to re-add the commits every time they reload.
 ## For more information
 
-https://github.com/Collin-M-Brown/Git-Changes-Highlighter/tree/main/git-highlighter
+https://github.com/Collin-M-Brown/Git-Vision
