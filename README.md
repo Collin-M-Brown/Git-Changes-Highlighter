@@ -7,6 +7,8 @@ For an example; if you have multiple commits for a single feature merged to the 
 This extension serves a similar purpose to a git heatmap but allows for tracking multiple commits at once.
 
 ![example image](images/gitvisionexample.png)
+
+![button image](images/buttons.png)
 ## Requirements
 
 vscode 1.82.2

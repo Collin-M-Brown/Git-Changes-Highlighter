@@ -6,8 +6,9 @@
     "name": "GitVision",
     "displayName": "Git Vision",
     "description": "Highlight git blame data for multiple commits at once.",
+    "icon": "./images/Git_vision_Logo.png",
     "publisher": "collin-m-brown",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "engines": {
         "vscode": "^1.81.0"
     },
