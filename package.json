@@ -5,7 +5,7 @@
     },
     "name": "GitVision",
     "displayName": "Git Vision",
-    "description": "Highlight git blame data for multiple commits at once.",
+    "description": "Highlight git blame data for multiple commits at once. Like a selective heatmap",
     "icon": "./images/Git_vision_Logo.png",
     "publisher": "collin-m-brown",
     "version": "0.0.2",
