@@ -12,6 +12,7 @@ vscode 1.82.2
 ## Extension Settings
 
 Enable Real time highlighting
+
 Highlight color
 
 ## Known Issues
@@ -23,7 +24,11 @@ Highlight color
 
 * Tracking highlights and real time can cause flickering. I will add an option to enable or disable
 
+## Notes
 * Needs testing with larger repositories.
+
+* This extension uses git blame to track commits. Things like moving entire folders can change the blame of every line in the folder.
+  
 ## Release Notes
 
 Temp
