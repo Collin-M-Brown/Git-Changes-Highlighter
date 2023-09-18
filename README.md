@@ -9,6 +9,8 @@ This extension serves a similar purpose to a git heatmap but allows for tracking
 ![example image](images/gitvisionexample.png)
 
 ![button image](images/buttons.png)
+
+![filter image](images/filterex.png)
 ## Requirements
 
 vscode 1.82.2
@@ -40,6 +42,10 @@ Highlight color
 ### 1.0.0
 
 Initial release of Git Vision
+
+### 1.0.1
+
+Add filter buttons and scroll bar highlights
 
 ### TODO
 * Add way to search/filter commit list to find commits easier
