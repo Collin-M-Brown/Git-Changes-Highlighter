@@ -72,6 +72,14 @@
                 }
             },
             {
+                "command": "GitVision.filterCommitRepository",
+                "title": "filterCommitRepository",
+                "icon": {
+                    "light": "./images/filter_light.svg",
+                    "dark": "./images/filter_dark.svg"
+                }
+            },
+            {
                 "command": "GitVision.openSettings",
                 "title": "settings"
             }
@@ -99,6 +107,12 @@
                         "type": "boolean",
                         "default": false,
                         "description": "Enables real time highlighting (This can put a load on the system)"
+                    },
+                    "GitVision.filterString": {
+                        "title": "Filter String for commit repo",
+                        "description": "Filters Commit Repository based on search string",
+                        "type": "string",
+                        "default": ""
                     }
                 }
             }
@@ -166,6 +180,11 @@
                     "command": "GitVision.hideHighlights",
                     "when": "view == CommitView",
                     "group": "navigation@2"
+                },
+                {
+                    "command": "GitVision.filterCommitRepository",
+                    "when": "view == CommitRepo",
+                    "group": "navigation"
                 }
             ]
         }

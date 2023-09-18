@@ -88,6 +88,8 @@ export async function activate(context: vscode.ExtensionContext) {
     
     //Display Tree in sidebar view
     commandProcessor.updateTreeFiles(context);
+
+    commandProcessor.filterCommitRepository(context);
 }
 
 export function deactivate() { }

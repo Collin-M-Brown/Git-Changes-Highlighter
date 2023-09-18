@@ -5,7 +5,10 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: s
     private _onDidChangeTreeData: vscode.EventEmitter<undefined | null | void> = new vscode.EventEmitter<undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<undefined | null | void> = this._onDidChangeTreeData.event;
     
+    // <name,date>
+    private allCommits: { [key: string]: string } = {};
     private commits: { [key: string]: string } = {};
+    private filterString = "";
     
     getTreeItem(element: { key: string, value: string }): vscode.TreeItem {
         return new vscode.TreeItem(element.key, vscode.TreeItemCollapsibleState.None);
@@ -18,11 +21,15 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: s
     }
     
     addCommit(commit: { key: string, value: string }) {
-        this.commits[commit.key] = commit.value;
+        this.allCommits[commit.key] = commit.value;
+        if (commit.key.toLowerCase().includes(this.filterString)) {
+            this.commits[commit.key] = commit.value;
+        }
         this._onDidChangeTreeData.fire();
     }
     
     clear() {
+        this.allCommits = {};
         this.commits = {};
         this._onDidChangeTreeData.fire();
     }
@@ -32,12 +39,32 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: s
     }
 
     loadCommits(newCommits: { [key: string]: string }) {
-        for (let key in newCommits)
-            this.commits[key] = newCommits[key];
+        //for (let key in newCommits)
+        //    this.commits[key] = newCommits[key];
+        for (let key in newCommits) {
+            this.allCommits[key] = newCommits[key];
+            if (key.toLowerCase().includes(this.filterString)) {
+                this.commits[key] = newCommits[key];
+            }
+        }
         this._onDidChangeTreeData.fire();
     }
 
+    reload() {
+        this.commits = {};
+        for (let key in this.allCommits) {
+            if (key.toLowerCase().includes(this.filterString) || this.filterString.length === 0) {
+                this.commits[key] = this.allCommits[key];
+            }
+        }
+        this._onDidChangeTreeData.fire();
+    }
+
+    loadFilter(filter: string) {
+        this.filterString = filter;
+    }
+
     getCommits() {
-        return this.commits;
+        return this.allCommits;
     }
 }

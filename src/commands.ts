@@ -24,8 +24,8 @@ export class CommandProcessor {
         this.hp = new HighlightProcessor();
         this.commitView = new CommitListViewProvider();
         this.commitRepo = new CommitListViewProvider();
-        this.commitViewDropdown = vscode.window.createTreeView('CommitView', { treeDataProvider: this.commitView});
-        this.commitRepoDropdown = vscode.window.createTreeView('CommitRepo', { treeDataProvider: this.commitRepo});
+        this.commitViewDropdown = vscode.window.createTreeView('CommitView', { treeDataProvider: this.commitView });
+        this.commitRepoDropdown = vscode.window.createTreeView('CommitRepo', { treeDataProvider: this.commitRepo });
 
         context.subscriptions.push(this.commitViewDropdown);
         context.subscriptions.push(this.commitRepoDropdown);
@@ -35,7 +35,7 @@ export class CommandProcessor {
         const commandProcessor = new CommandProcessor(context);
         commandProcessor.fileManager = await FileManager.create();
         if (STRESS_DEBUG)
-            commandProcessor.commitView.loadCommits(commandProcessor.fileManager.getCommitList());  
+            commandProcessor.commitView.loadCommits(commandProcessor.fileManager.getCommitList());
         else
             commandProcessor.commitRepo.loadCommits(commandProcessor.fileManager.getCommitList());
         vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
@@ -57,7 +57,7 @@ export class CommandProcessor {
 
     highlightCommits(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.highlightCommits', async () => {
-           //debugLog("Running command: GitVision.highlightCommits");
+            //debugLog("Running command: GitVision.highlightCommits");
 
             this.fileManager.clearHighlightData();
             this.hp.clearAllHighlights();
@@ -82,27 +82,27 @@ export class CommandProcessor {
         return; //Disabled for now
         let disposable = vscode.commands.registerCommand('GitVision.highlightUncommitedChanges', async () => {
             try {
-                   //debugLog("Running command: GitVision.highlightUncommitedChanges");
-                    //await this.fileManager.addCommits(["Uncommitted changes"]); TODOFIX
-                    this.hp.loadHighlights(this.fileManager.getGitHighlightData()); 
-                    for (const editor of vscode.window.visibleTextEditors) {
-                        this.hp.applyHighlights(editor.document);
-                    }
-                    this.updateTreeFiles(context);
-                } catch (error) {
-                    vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
-                    exit(1);
+                //debugLog("Running command: GitVision.highlightUncommitedChanges");
+                //await this.fileManager.addCommits(["Uncommitted changes"]); TODOFIX
+                this.hp.loadHighlights(this.fileManager.getGitHighlightData());
+                for (const editor of vscode.window.visibleTextEditors) {
+                    this.hp.applyHighlights(editor.document);
                 }
-            });
-        
-            context.subscriptions.push(disposable);
+                this.updateTreeFiles(context);
+            } catch (error) {
+                vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
+                exit(1);
+            }
+        });
+
+        context.subscriptions.push(disposable);
     }
 
     highlightBranch(context: vscode.ExtensionContext) {
         return; //Disabled for now
         let disposable = vscode.commands.registerCommand('GitVision.highlightBranch', async () => {
             try {
-               //debugLog("Running command: GitVision.highlightBranch");
+                //debugLog("Running command: GitVision.highlightBranch");
                 await this.fileManager.addCurrentBranch();
                 this.hp.loadHighlights(this.fileManager.getGitHighlightData());
                 const editor = vscode.window.activeTextEditor;
@@ -115,13 +115,13 @@ export class CommandProcessor {
                 exit(1);
             }
         });
-    
+
         context.subscriptions.push(disposable);
     }
 
     clearAllHighlights(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.clearAll', async () => {
-           //debugLog("Running command: GitVision.clearAll");
+            //debugLog("Running command: GitVision.clearAll");
             let confirmation = await vscode.window.showInformationMessage('Are you sure you want to clear the list?', { modal: true }, 'Yes', 'No');
 
             if (confirmation === 'Yes') {
@@ -151,7 +151,7 @@ export class CommandProcessor {
 
     expandAll(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.expandAll', async () => {
-           //debugLog("Running command: GitVision.expandAll");
+            //debugLog("Running command: GitVision.expandAll");
             if (this.fileTree) {
                 //this.fileTree.expandAll();
                 this.fileTree.updateFiles(new Map<string, number>());
@@ -172,7 +172,7 @@ export class CommandProcessor {
                 if (!found) {
                     const item = e.selection[0] as { key: string, value: string };;
                     //vscode.window.showInformationMessage(`You clicked on commit: ${item.commitMessage}`);
-                   //debugLog(`You clicked on commit: ${item.key}`);
+                    //debugLog(`You clicked on commit: ${item.key}`);
                     commits = this.commitRepo.getCommits();
                     delete commits[item.key];
                     this.commitView.addCommit(item);
@@ -196,7 +196,7 @@ export class CommandProcessor {
             if (e.selection.length > 0) {
                 if (!found) {
                     const item = e.selection[0] as { key: string, value: string };;
-                   //debugLog(`You clicked on commit: ${item.key}`);
+                    //debugLog(`You clicked on commit: ${item.key}`);
                     commits = this.commitView.getCommits();
                     delete commits[item.key];
                     this.commitRepo.addCommit(item);
@@ -214,7 +214,7 @@ export class CommandProcessor {
 
     hideHighlights(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.hideHighlights', async () => {
-           //debugLog("Running command: GitVision.hideHighlights");
+            //debugLog("Running command: GitVision.hideHighlights");
             this.hp.clearAllHighlights();
             this.commitsOn = false;
         });
@@ -240,5 +240,24 @@ export class CommandProcessor {
                 }
             }
         });
+    }
+
+    filterCommitRepository(context: vscode.ExtensionContext) {
+        let disposable = vscode.commands.registerCommand('GitVision.filterCommitRepository', async () => {
+            const filterString = vscode.workspace.getConfiguration('GitVision').get('filterString');
+            let filter: string = "";
+
+            if (filterString)
+                filter = filterString.toString().toLowerCase();
+
+            if (filter === "")
+                vscode.window.showInformationMessage("Empty filter found in extension settings");
+
+            console.debug(`filter = ${filter}`);
+            this.commitRepo.loadFilter(filter);
+            this.commitRepo.reload();
+            
+        });
+        context.subscriptions.push(disposable);
     }
 }
