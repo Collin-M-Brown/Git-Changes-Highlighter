@@ -88,8 +88,6 @@ Add filter buttons and scroll bar highlights
 
 * Handle branch switch, auto reload commit repository an clear watch list.
 
-* Add clear filter option
-
 * Add color option for highlights that scales with date
 ## For more information
 

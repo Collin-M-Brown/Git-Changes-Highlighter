@@ -75,6 +75,14 @@
                 "command": "GitVision.filterCommitRepository",
                 "title": "filterCommitRepository",
                 "icon": {
+                    "light": "./images/filter-filled_light.svg",
+                    "dark": "./images/filter-filled_dark.svg"
+                }
+            },
+            {
+                "command": "GitVision.clearFilter",
+                "title": "clearFilter",
+                "icon": {
                     "light": "./images/filter_light.svg",
                     "dark": "./images/filter_dark.svg"
                 }
@@ -199,6 +207,11 @@
                 },
                 {
                     "command": "GitVision.filterCommitRepository",
+                    "when": "view == CommitRepo",
+                    "group": "navigation"
+                },
+                {
+                    "command": "GitVision.clearFilter",
                     "when": "view == CommitRepo",
                     "group": "navigation"
                 }

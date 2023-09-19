@@ -73,6 +73,8 @@ export async function activate(context: vscode.ExtensionContext) {
     commandProcessor.updateTreeFiles(context);
 
     commandProcessor.filterCommitRepository(context);
+
+    commandProcessor.clearFilter(context);
 }
 
 export function deactivate() { }

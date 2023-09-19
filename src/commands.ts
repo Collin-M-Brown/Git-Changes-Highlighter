@@ -260,6 +260,7 @@ export class CommandProcessor {
             }
         });
     }
+
     filterCommitRepository(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.filterCommitRepository', async () => {
             const filterString = vscode.workspace.getConfiguration('GitVision').get('filterString');
@@ -275,6 +276,14 @@ export class CommandProcessor {
             this.commitRepo.loadFilter(filter);
             this.commitRepo.reload();
             
+        });
+        context.subscriptions.push(disposable);
+    }
+
+    clearFilter(context: vscode.ExtensionContext) {
+        let disposable = vscode.commands.registerCommand('GitVision.clearFilter', async () => {
+            this.commitRepo.loadFilter("");
+            this.commitRepo.reload();
         });
         context.subscriptions.push(disposable);
     }
