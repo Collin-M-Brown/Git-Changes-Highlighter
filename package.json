@@ -121,7 +121,7 @@
                     "GitVision.findRenamedFiles": {
                         "title": "Find Renamed Files",
                         "type": "boolean",
-                        "default": true,
+                        "default": false,
                         "description": "Will find git blame even if file was moved into a different folder or renamed. This uses a fair bit more processing power. If you know the commits you are looking for are in files that have not been removed or renamed, you can disable this to increase the parsing speed."
                     }
                 }
