@@ -7,35 +7,18 @@ extension.ts->commands.ts -> commitView.ts/fileTree.ts
 import * as vscode from 'vscode';
 import { CommandProcessor } from './commands';
 import { execSync } from 'child_process';
-import { getWorkspacePath } from './library';
+
+import { InfoManager as ms } from './infoManager';
 
 let commandProcessor: CommandProcessor;
+export let GIT_REPO: string;
 
-//function startProfile() {
-//    console.log(process.cwd());
-//    // Start profiling
-//    const profile = profiler.startProfiling('myProfile', true);
-//    
-//    // Stop profiling after 5 seconds
-//    setTimeout(() => {
-//        profile.stop();
-//    
-//        // Export the profile data
-//        profile.export((error: Error | null, result: string | null) => {
-//            if (error) {
-//                console.error("Error exporting profile: ", error);
-//            } else {
-//                fs.writeFileSync('myProfile.cpuprofile', result as string);
-//            }
-//            profile.delete(); // Delete the profile
-//        });
-//    }, 5000);
-//}
-
-function isGitRepo(command: string): boolean {
+function getGitRepo(): boolean {
     try {
-        execSync(`cd ${getWorkspacePath()} && ${command}`);// maybe cd at start
-        return true;
+        console.log(`workspace path: ${ms.getWorkspacePath()}`);
+        GIT_REPO = execSync(`cd ${ms.getWorkspacePath()} && git rev-parse --show-toplevel`).toString().trim();// maybe cd at start
+        //console.log(`git repo found : ${GIT_REPO}`);
+        return GIT_REPO.length != 0;
     } catch (error) {
         return false;
     }
@@ -43,8 +26,8 @@ function isGitRepo(command: string): boolean {
 
 export async function activate(context: vscode.ExtensionContext) {
     //startProfile();
-    const isRepo = isGitRepo("git rev-parse --is-inside-work-tree");
-    console.log(`GitVision: ${isRepo}`);
+    const isRepo = getGitRepo();
+    console.log(`GitVision: ${isRepo}, ${GIT_REPO}}`);
     vscode.commands.executeCommand('setContext', 'GitVision.isGitRepository', isRepo);
     if (!isRepo)
         return;

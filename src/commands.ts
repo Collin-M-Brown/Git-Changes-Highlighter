@@ -1,10 +1,14 @@
 import * as vscode from 'vscode';
 import { exit } from 'process';
-import { debugLog, getWorkspacePath, STRESS_DEBUG } from './library';
 import { FileManager } from './fileManager';
 import { fileTree } from './fileTree';
 import { HighlightProcessor } from './highlighter';
 import { CommitListViewProvider } from './commitView';
+import { GIT_REPO } from './extension';
+import * as fs from 'fs';
+import * as path from 'path';
+import { InfoManager as ms } from './infoManager';
+
 
 export class CommandProcessor {
     private fileManager!: FileManager;
@@ -18,7 +22,7 @@ export class CommandProcessor {
     private commitsOn: boolean = false;
 
     private constructor(context: vscode.ExtensionContext) {
-        this.fileTree = new fileTree(getWorkspacePath(), new Set<string>());
+        this.fileTree = new fileTree(GIT_REPO, new Set<string>());
         vscode.window.registerTreeDataProvider('gitHighlightsView', this.fileTree);
 
         this.hp = new HighlightProcessor();
@@ -34,7 +38,7 @@ export class CommandProcessor {
     static async create(context: vscode.ExtensionContext) {
         const commandProcessor = new CommandProcessor(context);
         commandProcessor.fileManager = await FileManager.create();
-        if (STRESS_DEBUG)
+        if (ms.STRESS_DEBUG)
             commandProcessor.commitView.loadCommits(commandProcessor.fileManager.getCommitList());
         else
             commandProcessor.commitRepo.loadCommits(commandProcessor.fileManager.getCommitList());
@@ -233,27 +237,29 @@ export class CommandProcessor {
         context.subscriptions.push(disposable);
     }
 
+    fileExistsInRepo(filePath: string): boolean {
+        const relativePath = path.relative(GIT_REPO, filePath);
+        return !relativePath.startsWith('..') && fs.existsSync(filePath);
+    }
+
     fileWatcher() {
         vscode.workspace.onDidSaveTextDocument(async e => {
             if (this.commitsOn) {
                 try {
-                    //const uri = e.fileName;
                     const fileName = e.fileName;
-                    //console.log(`File saved: ${fileName}`);
+                    if (!this.fileExistsInRepo(fileName))
+                        return;
                     if (!await this.fileManager.updateFileHighlights(fileName))
                         return;
-                    //this.hp.clearAllHighlights();
-                    this.hp.loadFile(fileName, this.fileManager.getGitHighlightData()[fileName]); //might want to optimize this
+                    this.hp.loadFile(fileName, this.fileManager.getGitHighlightData()[fileName]);
                     this.hp.clearHighlights(e);
                     this.hp.applyHighlights(e);
                 }
                 catch (error) {
-                    // :(
                 }
             }
         });
     }
-
     filterCommitRepository(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.filterCommitRepository', async () => {
             const filterString = vscode.workspace.getConfiguration('GitVision').get('filterString');

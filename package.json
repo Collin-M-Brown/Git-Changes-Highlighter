@@ -8,7 +8,7 @@
     "description": "Highlight git blame data for multiple commits at once. Like a selective heatmap",
     "icon": "./images/Git_vision_Logo.png",
     "publisher": "collin-m-brown",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "engines": {
         "vscode": "^1.81.0"
     },
@@ -86,8 +86,26 @@
         ],
         "configuration": [
             {
-                "title": "Git Highlighter",
+                "title": "Git Vision Settings",
                 "properties": {
+                    "GitVision.showBasicInfoMessages": {
+                        "title": "Show Basic Info Popups",
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show Basic Info Popups; general notifications"
+                    },
+                    "GitVision.showDebugInfoMessages": {
+                        "title": "Show Additional Info Popups",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Show Additional Info Popups for debugging purposes"
+                    },
+                    "GitVision.findRenamedFiles": {
+                        "title": "Find Renamed Files",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Will find files touched by commit even if file name was changed. Disabled by default because it adds a lot of processing time."
+                    },
                     "GitVision.highlightColor": {
                         "type": "string",
                         "default": "#2259b27e",
@@ -111,18 +129,6 @@
                         "type": "boolean",
                         "default": true,
                         "description": "Bundles branches together when adding merged commit to list"
-                    },
-                    "GitVision.showDebugInfoMessages": {
-                        "title": "Show Additional Info Popups",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Show Additional Info Popups for debugging purposes"
-                    },
-                    "GitVision.findRenamedFiles": {
-                        "title": "Find Renamed Files",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Will find git blame even if file was moved into a different folder or renamed. This uses a fair bit more processing power. If you know the commits you are looking for are in files that have not been removed or renamed, you can disable this to increase the parsing speed."
                     }
                 }
             }

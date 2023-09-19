@@ -23,22 +23,22 @@ git diff <hash>..HEAD
 
 import * as vscode from 'vscode';
 import { execSync } from 'child_process';
-import { getWorkspacePath, showMessage } from './library';
-import { debugLog, DEBUG } from './library';
+//import { getWorkspacePath, ms.debugInfo } from './infoManager';
+//import { ms.debugLog, ms.DEBUG } from './infoManager';
 import simpleGit, { SimpleGit, DefaultLogFields, LogResult } from 'simple-git';
-import { debug } from 'console';
+import { GIT_REPO } from './extension';
+import { InfoManager as ms } from './infoManager';
 
 const fs = require('fs');
 const path = require('path');
 
 export class FileManager {
-    private workspacePath: string;
     private git: SimpleGit;
     private gitLogPromise: Promise<LogResult<DefaultLogFields>>;
     private gitLogMap: Map<string, DefaultLogFields>;
     private gitLsPromise: Promise<string>;
     private gitLsFiles: Set<string> = new Set();
-    private gitHighlightData: {[file: string]: number[]};
+    private gitHighlightData: { [file: string]: number[] };
     private gitHighlightFiles: Set<string> = new Set();
     private commitHashSet: Set<string> = new Set();
     private commitList: { [key: string]: string } = {};
@@ -46,8 +46,7 @@ export class FileManager {
     private headCommit: string = '';
 
     private constructor() {
-        this.workspacePath = getWorkspacePath();
-        this.git = simpleGit(this.workspacePath);
+        this.git = simpleGit(GIT_REPO);
         this.gitLogPromise = this.git.log();
         this.gitLsPromise = this.git.raw(['ls-files']);
         this.gitLogMap = new Map();
@@ -60,22 +59,23 @@ export class FileManager {
         return fileManager;
     }
 
-    private async setUp()
-    {
-        this.headCommit = (await this.git.raw(['rev-list', '--max-parents=0', 'HEAD'])).trim();
+    private async setUp() {
+        this.headCommit = (this.executeCommand(`git rev-list --max-parents=0 HEAD`)).trim();
+        //this.headCommit = (await this.git.raw(['rev-list', '--max-parents=0', 'HEAD'])).trim();
         this.gitLogMap = this.setgitLogMap((await this.gitLogPromise));
         this.gitLsFiles = new Set<string>((await this.gitLsPromise).split('\n'));
     }
 
     private executeCommand(command: string): string {
         try {
-            //console.log(`trying command "${command}":`);
-            const output = execSync(`cd ${this.workspacePath} && ${command}`);// maybe cd at start
-            const outputString = output.toString();
+            //const path = execSync(`cd ${GIT_REPO} ; git rev-parse --show-toplevel`).toString().trim();
+            const outputString = execSync(`cd "${GIT_REPO}" && ${command}`).toString().trim();
+            console.log(`Command: ${command} \nOutput: ${outputString}`);
             return outputString;
         } catch (error) {
-            //console.error(`Error executing command "${command}":`); //seems to be trigged by deleted file that has blame in it...
-            vscode.window.showErrorMessage(`Error executing command: ${command}`);
+            //vscode.window.showErrorMessage(`Error executing command: cd "${GIT_REPO}" && ${command}`);
+            if (error instanceof Error)
+                ms.debugInfo(`${error.message}`);
             return "";
         }
     }
@@ -95,18 +95,32 @@ export class FileManager {
 
     private setgitLogMap(log: LogResult<DefaultLogFields>): Map<string, DefaultLogFields> {
         try {
-            //const log = await this.git.log();
             const map: Map<string, DefaultLogFields> = new Map();
+            let mergesIgnored = 0;
             for (let l of log.all) {
-                map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
-                this.commitList[l.message] = l.date;
-                //console.log(`Commit: ${l.message}, ${l.hash}`);
-                //console.log(`Commit: ${l}`);
+                let hashes: any[] = [];
+                if (l.hash != this.headCommit)
+                    hashes = this.executeCommand(`git log --pretty=format:%H ${l.hash}^..${l.hash}`).split("\n");
+                let isDiff = true;
+                if (hashes.length >= 2) {
+                    const files = this.executeCommand(`git diff ${hashes[0]}..${hashes[1]} --name-only`).trim();
+                    isDiff = files.length > 0;
+                }
+                if (isDiff) {
+                    map.set(l.message, l); //TODO, add unique identifier
+                    this.commitList[l.message] = l.date;
+                }
+                else {
+                    mergesIgnored++;
+                }
             }
+
+            ms.basicInfo(`${mergesIgnored} merge commits ignored due to having no conflicts.`);
 
             const current: DefaultLogFields = {
                 hash: '0000000000000000000000000000000000000000',
-                date: '', message: '', author_email: '', author_name: '', refs: '', body: '', };
+                date: '', message: '', author_email: '', author_name: '', refs: '', body: '',
+            };
             map.set('Uncommitted changes', current);
             return map;
         } catch (error) {
@@ -114,31 +128,43 @@ export class FileManager {
             return new Map();
         }
     }
-    
+
     // Only want parse files changed to save time.
     private async getChangedFiles(hash: string, commit: string): Promise<string[]> {
         try {
             let res: string[];
             if (hash === '0000000000000000000000000000000000000000')
-                res = (await this.git.raw(['diff', '--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+                res = this.executeCommand(`git diff HEAD --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
             else if (hash === this.headCommit)
-                res = (await this.git.raw(['diff', '--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+                res = this.executeCommand(`git diff HEAD --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
             else {
-                res = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+                res = this.executeCommand(`git diff ${hash}~..${hash} --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
                 if (vscode.workspace.getConfiguration('GitVision').get('findRenamedFiles'))
-                    res = res.concat((await this.git.raw(['diff', '--relative', `${hash}~..HEAD`, '--find-renames=80%', '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean));
+                    res = res.concat(this.executeCommand(`git diff ${hash}~..HEAD --find-renames=70% --name-only`).split('\n').map(s => s.trim()).filter(Boolean));
             }
 
             if (res.length > 100)
                 return [];
-    
-            // Filter out ignored files
-            res = res.filter(file => this.gitLsFiles.has(file));
-            //debugLog(`Changed files for hash: ${hash}: ${res}`);
-            if (res.length === 0) {
-                showMessage(`Founds 0 files with changes for commit ${commit}`);
+
+            let changedFiles: string[] = [];
+            for (let file of res) {
+                if (this.gitLsFiles.has(file)) {
+                    changedFiles.push(file);
+                }
+                else {
+                    file = file.split("/").slice(-1)[0];
+                    const newFile = this.executeCommand(`git ls-files | grep ${file} || true`).trim(); //TODO maybe use map to prevent repeat searches
+                    //TODO: handle multiple files returned. For now, just do nothing as we can't really know if it was renamed.
+                    //Also, this will cause an issue if two files have the same name but one is deleted. But should be fine as long as hash is not found.
+                    if (newFile.length > 0 && newFile.includes("\n") === false)
+                        changedFiles.push(newFile);
+                }
             }
-            return res;
+
+            if (changedFiles.length === 0) {
+                ms.debugInfo(`Founds 0 files with changes for commit ${commit}`);
+            }
+            return changedFiles;
         } catch (error: unknown) {
             let message = 'Unknown error';
             if (error instanceof Error) {
@@ -153,47 +179,46 @@ export class FileManager {
     private async fillHashAndFileSet(commitList: string[]) {
 
         if (this.gitLogMap.size === 0) {
-           //debugLog(`No git log found. Please check that you are in a git repository.`);
+            //ms.debugLog(`No git log found. Please check that you are in a git repository.`);
             vscode.window.showErrorMessage(`No git log found.`);
         }
 
         if (false) {
             this.gitLogMap.forEach((value, key) => {
-                if (key in commitList) { debugLog(`Key: ${key}, Value: ${value.hash}`); }
-            });}
+                if (key in commitList) { ms.debugLog(`Key: ${key}, Value: ${value.hash}`); }
+            });
+        }
 
         const filePromises = commitList.map(commit => {
             const hash = this.gitLogMap.get(commit)?.hash;
             if (hash) {
                 this.commitHashSet.add(hash);
-                //console.log(`finding hash for commit: ${commit}, ${hash}`);
                 return this.getChangedFiles(`${hash}`, commit);
             }
             return Promise.resolve([]);
         });
 
-        const set =  new Set<string>((await Promise.all(filePromises)).flat());
-        for (const file of set) { 
-            //debugLog(`File: ${file}`);
-            if (fs.existsSync(path.join(this.workspacePath, file))) {
-                //debugLog(`File exists: ${file}`);
+        const set = new Set<string>((await Promise.all(filePromises)).flat());
+        for (const file of set) {
+            if (fs.existsSync(path.join(GIT_REPO, file))) {
+                //ms.debugLog(`File exists: ${file}`);
                 this.gitHighlightFiles.add(file);
             }
             else {
-                showMessage(`could not find path to file ${file}>`);
+                ms.debugInfo(`could not find path to file ${path.join(GIT_REPO, file)}`);
             }
         }
         //set.forEach(file => this.gitHighlightFiles.add(file));
-        
-        if (DEBUG) {
-            debugLog(`==Files with changes==`);
+
+        if (ms.DEBUG) {
+            ms.debugLog(`==Files with changes==`);
             for (let file of this.gitHighlightFiles)
-                debugLog(`${file}`);
-            debugLog(`======================`);
+                ms.debugLog(`${file}`);
+            ms.debugLog(`======================`);
         }
 
         //vscode.window.showInformationMessage(`Changes found in ${this.gitHighlightFiles.size} files`);
-        //debugLog(`Changes found in ${this.gitHighlightFiles.size} files`);
+        //ms.debugLog(`Changes found in ${this.gitHighlightFiles.size} files`);
         if (this.gitHighlightFiles.size > 100) {
             let confirmation = await vscode.window.showInformationMessage(`Detected a large number of changes: ${this.gitHighlightFiles.size} files found with changes. Are you sure you wish to process them?`, { modal: true }, 'Yes', 'No');
 
@@ -211,29 +236,30 @@ export class FileManager {
     */
     private async fillGitHighlightData() {
         for (let file of this.gitHighlightFiles) {
-            debugLog(`finding hash data for file: ${file}`);
-            file = path.join(this.workspacePath, file);
+            ms.debugLog(`finding hash data for file: ${file}`);
+            file = path.join(GIT_REPO, file);
             const count = (await this.updateFileHighlights(file));
-            if (count) 
+            if (count)
                 this.fileCounter.set(file, count);
-            if (DEBUG) {
-               debugLog(`==Highlights for ${file}==`);
-               debugLog(`${this.gitHighlightData}`);
-               debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(this.workspacePath, file)).toString()]}`);
-               debugLog(`========================`);
+            if (ms.DEBUG) {
+                ms.debugLog(`==Highlights for ${file}==`);
+                ms.debugLog(`${this.gitHighlightData}`);
+                ms.debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(GIT_REPO, file)).toString()]}`);
+                ms.debugLog(`========================`);
             }
         }
-        //debugLog(`highlights filled for ${this.fileCounter.size} files}`);
+        //ms.debugLog(`highlights filled for ${this.fileCounter.size} files}`);
         //this.gitHighlightFiles = updatedGitHighlightFiles;
     }
 
     //File should be in the form relative path
     async updateFileHighlights(file: string): Promise<number> {
-        //debugLog(`updating fileHighlights for file ${file}`);
+        //ms.debugLog(`updating fileHighlights for file ${file}`);
         let foundInHashSet = false;
         let count = 0;
         try {
-            const blameFile: string[] = (await this.git.raw(['blame', `-l`, `${file}`])).split('\n');
+            const blameFile: string[] = this.executeCommand(`git blame -l ${file}`).split('\n');
+            //const blameFile: string[] = (await this.git.raw(['blame', `-l`, `${file}`])).split('\n');
             if (blameFile.length === 0)
                 return 0;
 
@@ -249,7 +275,7 @@ export class FileManager {
         } catch (error) {
             console.error(`Error getting blame for file: ${file}`);
             //vscode.window.showErrorMessage(`Error getting blame for file: ${file}`);
-            showMessage(`Error getting blame for file: ${file}`);
+            ms.debugInfo(`Error getting blame for file: ${file}`);
             return 0;
         }
         return count;
@@ -257,8 +283,8 @@ export class FileManager {
 
     async addCurrentBranch(): Promise<void> {
         try {
-            let branchCommits: string[] = (await this.git.raw(['log','main..HEAD', `--pretty=format:%s`])).split('\n').map(s => s.trim()).filter(Boolean);
-            //debugLog(`Commits to be added: ${branchCommits}`);
+            let branchCommits: string[] = (await this.git.raw(['log', 'main..HEAD', `--pretty=format:%s`])).split('\n').map(s => s.trim()).filter(Boolean);
+            //ms.debugLog(`Commits to be added: ${branchCommits}`);
             //await this.addCommits(branchCommits); //TODOFIX
         }
         catch (error) {
@@ -273,7 +299,7 @@ export class FileManager {
         await this.fillGitHighlightData();
     }
 
-    getGitHighlightData(): {[file: string]: number[]} {
+    getGitHighlightData(): { [file: string]: number[] } {
         return this.gitHighlightData;
     }
 
@@ -287,7 +313,6 @@ export class FileManager {
 
     //This might cause issues in the future
     clearHighlightData() {
-        //console.log("ALL HIGHLIGHT DATA REMOVED");
         this.gitHighlightData = {};
         this.gitHighlightFiles = new Set();
         this.commitHashSet = new Set();
@@ -299,11 +324,10 @@ export class FileManager {
         let count = context.globalState.get<number>('count');
         if (count === undefined)
             count = 0;
-       //debugLog(`Count is ${count}`);
         context.globalState.update('count', count + 1);
     }
 
-    getCommitList(): { [key: string]: string }  {
+    getCommitList(): { [key: string]: string } {
         return this.commitList;
     }
 
@@ -311,10 +335,8 @@ export class FileManager {
         const hash = this.gitLogMap.get(commit)?.hash;
         let res: { [key: string]: string } = {};
         if (hash) {
-            //console.log(this.executeCommand(`echo $(pwd) -- ${this.workspacePath}`));
             const hashes = this.executeCommand(`git log --pretty=format:%H ${hash}^1..${hash}`).split("\n");
             for (let h of hashes) {
-                //console.log(`h=${h}`);
                 //this.commitList[l.message] = l.date;
                 const commitMessage = this.executeCommand(`git show -s --format=%s ${h}`).trim();
                 res[commitMessage] = this.commitList[commitMessage];

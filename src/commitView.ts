@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { debugLog, DEBUG } from './library';
 
 export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: string]: string }> {
     private _onDidChangeTreeData: vscode.EventEmitter<undefined | null | void> = new vscode.EventEmitter<undefined | null | void>();

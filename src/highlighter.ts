@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
-import { debugLog, DEBUG } from './library';
 import * as _ from 'lodash';
+import { InfoManager as ms } from './infoManager';
+
+
 export class HighlightProcessor {
     private highlights: { [uri: string]: number[] };
     private decorationType:vscode.TextEditorDecorationType;
@@ -53,7 +55,7 @@ export class HighlightProcessor {
             //console.log(`applying highlights to: ${uri}`);
             //console.log(`Lines: ${lines}`);
             const color = vscode.workspace.getConfiguration('GitVision').get('highlightColor');
-            //debugLog(`Color: ${color}`);
+            //ms.debugLog(`Color: ${color}`);
 
             try {
                 this.decorationType.dispose(); 
