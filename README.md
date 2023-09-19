@@ -16,17 +16,22 @@ This extension serves a similar purpose to a git heatmap but allows for tracking
 Notes on merged commits not appearing in Commit Repo dropdown:
 When a branch is merged into another, a merged commit will be created. This commit will usually not appear in the git blame data unless conflicts were resolved in this commit.
 A typical merged commit might look like this
-commit <Hash A>\n
-Merge: <Hash B> <Hash C>\n
-Author: <Name>\n
-Date: <Date>\n
-\t Merge branch 'branch A' into 'main'\n
-\t Commit message of merge request
 
-in this case <Hash A> will not show up as blame in any files unless the commit <Merge branch 'branch A' into 'main'>
+    commit (Hash A)
+    
+    Merge: (Hash B) (Hash C)
+    
+    Author: (Name)
+    
+    Date: (Date)
+
+    Merge branch 'branch A' into 'main'
+    Commit message of merge request
+
+in this case (Hash A) will not show up as blame in any files unless the commit (Merge branch 'branch A' into 'main')
 had conflicts that were resolved.
 
-Therefore, if there were not conflicts, I removed  <Merge branch 'branch A' into 'main'> from the commit repo, since there would be a lot of empty commits.
+Therefore, if there were not conflicts, I removed  (Merge branch 'branch A' into 'main') from the commit repo, since there would be a lot of empty commits.
 
 
 ## Requirements

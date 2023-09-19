@@ -342,6 +342,8 @@ export class FileManager {
                 res[commitMessage] = this.commitList[commitMessage];
             }
         }
+        if (Object.keys(res).length > 1)
+            ms.basicInfo(`Found ${Object.keys(res).length} siblings for commit ${commit}`);
         return res;
     }
 }
