@@ -174,8 +174,20 @@ export class CommandProcessor {
                     //vscode.window.showInformationMessage(`You clicked on commit: ${item.commitMessage}`);
                     //debugLog(`You clicked on commit: ${item.key}`);
                     commits = this.commitRepo.getCommits();
-                    delete commits[item.key];
-                    this.commitView.addCommit(item);
+                    const bundleBranches = vscode.workspace.getConfiguration('GitVision').get('bundleMergedBranches');
+                    if (bundleBranches) {
+                        const brothers = this.fileManager.getBrothers(item.key);
+                        for (let item of Object.entries(brothers)) {
+                            const [key, value] = item;
+                            delete commits[key];
+                            this.commitView.addCommit({ key, value });
+                        }
+                    }
+                    else {
+                        delete commits[item.key];
+                        this.commitView.addCommit(item);
+                    }
+                    
                     this.commitRepo.clear();
                     found = true;
                 }

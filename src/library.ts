@@ -9,6 +9,13 @@ export function debugLog(message: string | undefined) {
         console.log(message);
 }
 
+export function showMessage(message: string) {
+
+    if (vscode.workspace.getConfiguration('GitVision').get('showDebugInfoMessages')) {
+        vscode.window.showInformationMessage(`${message}`);
+    }
+}
+
 export function getWorkspacePath(): string {
     if (!vscode.workspace.workspaceFolders) {
         vscode.window.showErrorMessage(`No path configured or no workspace open`);

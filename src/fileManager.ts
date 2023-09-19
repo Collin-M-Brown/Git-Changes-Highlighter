@@ -23,7 +23,7 @@ git diff <hash>..HEAD
 
 import * as vscode from 'vscode';
 import { execSync } from 'child_process';
-import { getWorkspacePath } from './library';
+import { getWorkspacePath, showMessage } from './library';
 import { debugLog, DEBUG } from './library';
 import simpleGit, { SimpleGit, DefaultLogFields, LogResult } from 'simple-git';
 import { debug } from 'console';
@@ -69,9 +69,9 @@ export class FileManager {
 
     private executeCommand(command: string): string {
         try {
+            console.log(`trying command "${command}":`);
             const output = execSync(`cd ${this.workspacePath} && ${command}`);// maybe cd at start
             const outputString = output.toString();
-           //debugLog(`Completed for command "${command}": ${outputString.length}`);
             return outputString;
         } catch (error) {
             console.error(`Error executing command "${command}":`); //seems to be trigged by deleted file that has blame in it...
@@ -100,7 +100,8 @@ export class FileManager {
             for (let l of log.all) {
                 map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
                 this.commitList[l.message] = l.date;
-               //debugLog(`Commit: ${l.message}, ${l.hash}`);
+                console.log(`Commit: ${l.message}, ${l.hash}`);
+                //console.log(`Commit: ${l}`);
             }
 
             const current: DefaultLogFields = {
@@ -123,8 +124,9 @@ export class FileManager {
             else if (hash === this.headCommit)
                 res = (await this.git.raw(['diff', '--relative', `HEAD`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
             else {
-                res = (await this.git.raw(['diff', '--relative', `${hash}~..HEAD`, '--find-renames=100%', '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
-                res = res.concat((await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean));
+                res = (await this.git.raw(['diff', '--relative', `${hash}~..${hash}`, '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean);
+                if (vscode.workspace.getConfiguration('GitVision').get('findRenamedFiles'))
+                    res = res.concat((await this.git.raw(['diff', '--relative', `${hash}~..HEAD`, '--find-renames=80%', '--name-only'])).split('\n').map(s => s.trim()).filter(Boolean));
             }
 
             if (res.length > 100)
@@ -132,7 +134,10 @@ export class FileManager {
     
             // Filter out ignored files
             res = res.filter(file => this.gitLsFiles.has(file));
-           //debugLog(`Changed files for hash: ${hash}: ${res}`);
+            //debugLog(`Changed files for hash: ${hash}: ${res}`);
+            if (res.length === 0) {
+                showMessage(`Founds 0 files with changes for commit ${commit}`);
+            }
             return res;
         } catch (error: unknown) {
             let message = 'Unknown error';
@@ -161,7 +166,7 @@ export class FileManager {
             const hash = this.gitLogMap.get(commit)?.hash;
             if (hash) {
                 this.commitHashSet.add(hash);
-                console.log(`finding hash for commit: ${commit}, ${hash}`);
+                //console.log(`finding hash for commit: ${commit}, ${hash}`);
                 return this.getChangedFiles(`${hash}`, commit);
             }
             return Promise.resolve([]);
@@ -175,7 +180,7 @@ export class FileManager {
                 this.gitHighlightFiles.add(file);
             }
             else {
-                //debugLog(`File does not exist: ${file}`);
+                showMessage(`could not find path to file ${file}>`);
             }
         }
         //set.forEach(file => this.gitHighlightFiles.add(file));
@@ -244,6 +249,7 @@ export class FileManager {
         } catch (error) {
             console.error(`Error getting blame for file: ${file}`);
             //vscode.window.showErrorMessage(`Error getting blame for file: ${file}`);
+            showMessage(`Error getting blame for file: ${file}`);
             return 0;
         }
         return count;
@@ -299,5 +305,21 @@ export class FileManager {
 
     getCommitList(): { [key: string]: string }  {
         return this.commitList;
+    }
+
+    getBrothers(commit: string) {
+        const hash = this.gitLogMap.get(commit)?.hash;
+        let res: { [key: string]: string } = {};
+        if (hash) {
+            console.log(this.executeCommand(`echo $(pwd) -- ${this.workspacePath}`));
+            const hashes = this.executeCommand(`git log --pretty=format:%H ${hash}^1..${hash}`).split("\n");
+            for (let h of hashes) {
+                console.log(`h=${h}`);
+                //this.commitList[l.message] = l.date;
+                const commitMessage = this.executeCommand(`git show -s --format=%s ${h}`).trim();
+                res[commitMessage] = this.commitList[commitMessage];
+            }
+        }
+        return res;
     }
 }
