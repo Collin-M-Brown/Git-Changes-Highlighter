@@ -29,7 +29,7 @@ export class HighlightProcessor {
     }
 
     loadFile(fileName: string, lines:number[]) {
-        console.log(`Loading file: ${fileName}`);
+        //console.log(`Loading file: ${fileName}`);
         this.highlights[fileName] = lines;
     }
 
@@ -105,7 +105,7 @@ export class HighlightProcessor {
             if (!vscode.workspace.getConfiguration('GitVision').get('enableRealtimeHighlighting'))
                 return;
             const file = e.document.fileName;
-            console.log(`onDidChangeTextDocument ${file}`);
+            //console.log(`onDidChangeTextDocument ${file}`);
             if (!this.highlights[file]) { return; }
             
             this.highlights[file].sort((a, b) => a - b);

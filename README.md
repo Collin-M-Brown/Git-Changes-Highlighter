@@ -10,7 +10,7 @@ This extension serves a similar purpose to a git heatmap but allows for tracking
 
 ![button image](images/buttons.png)
 
-![filter image](images/filterex.png)
+![filter image](images/filterAndUpdates.png)
 ## Requirements
 
 vscode 1.82.2
@@ -46,6 +46,15 @@ Initial release of Git Vision
 ### 1.0.1
 
 Add filter buttons and scroll bar highlights
+
+### 1.0.3
+* Add option to bundle merged commits
+
+* Add toggle option to search for git blame in renamed files (Disabled by default for performance)
+
+* Add toggle for debug messages
+
+* Fixed commit sorting on m based alphebet
 
 ### TODO
 * Add way to search/filter commit list to find commits easier

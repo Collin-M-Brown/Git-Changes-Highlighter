@@ -69,12 +69,12 @@ export class FileManager {
 
     private executeCommand(command: string): string {
         try {
-            console.log(`trying command "${command}":`);
+            //console.log(`trying command "${command}":`);
             const output = execSync(`cd ${this.workspacePath} && ${command}`);// maybe cd at start
             const outputString = output.toString();
             return outputString;
         } catch (error) {
-            console.error(`Error executing command "${command}":`); //seems to be trigged by deleted file that has blame in it...
+            //console.error(`Error executing command "${command}":`); //seems to be trigged by deleted file that has blame in it...
             vscode.window.showErrorMessage(`Error executing command: ${command}`);
             return "";
         }
@@ -100,7 +100,7 @@ export class FileManager {
             for (let l of log.all) {
                 map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
                 this.commitList[l.message] = l.date;
-                console.log(`Commit: ${l.message}, ${l.hash}`);
+                //console.log(`Commit: ${l.message}, ${l.hash}`);
                 //console.log(`Commit: ${l}`);
             }
 
@@ -311,10 +311,10 @@ export class FileManager {
         const hash = this.gitLogMap.get(commit)?.hash;
         let res: { [key: string]: string } = {};
         if (hash) {
-            console.log(this.executeCommand(`echo $(pwd) -- ${this.workspacePath}`));
+            //console.log(this.executeCommand(`echo $(pwd) -- ${this.workspacePath}`));
             const hashes = this.executeCommand(`git log --pretty=format:%H ${hash}^1..${hash}`).split("\n");
             for (let h of hashes) {
-                console.log(`h=${h}`);
+                //console.log(`h=${h}`);
                 //this.commitList[l.message] = l.date;
                 const commitMessage = this.executeCommand(`git show -s --format=%s ${h}`).trim();
                 res[commitMessage] = this.commitList[commitMessage];
