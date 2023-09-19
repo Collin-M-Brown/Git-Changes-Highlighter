@@ -9,7 +9,7 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: s
     private allCommits: { [key: string]: string } = {};
     private commits: { [key: string]: string } = {};
     private filterString = "";
-    
+    private alphabet = 'mabcdefghijklnopqrstuv';
     getTreeItem(element: { key: string, value: string }): vscode.TreeItem {
         return new vscode.TreeItem(element.key, vscode.TreeItemCollapsibleState.None);
     }
@@ -17,7 +17,16 @@ export class CommitListViewProvider implements vscode.TreeDataProvider<{ [key: s
     getChildren(element?: { key: string, value: string }): Thenable<{ key: string, value: string }[]> {
         if (element) 
             return Promise.resolve([]);
-        return Promise.resolve(Object.entries(this.commits).sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime()).map(([key, value]) => ({ key, value })));
+        return Promise.resolve(Object.entries(this.commits)
+            .sort((a, b) => {
+                // Sort by date
+                const dateComparison = new Date(b[1]).getTime() - new Date(a[1]).getTime();
+                if (dateComparison !== 0) return dateComparison;
+    
+                // If dates are equal, sort by custom alphabet order
+                return this.alphabet.indexOf(a[0]) - this.alphabet.indexOf(b[0]);
+            })
+            .map(([key, value]) => ({ key, value })));
     }
     
     addCommit(commit: { key: string, value: string }) {
