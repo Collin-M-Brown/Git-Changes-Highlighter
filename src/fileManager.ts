@@ -71,7 +71,7 @@ export class FileManager {
         try {
             //const path = execSync(`cd ${GIT_REPO} ; git rev-parse --show-toplevel`).toString().trim();
             const outputString = (await this.git.raw(command.split(' '))).trim();
-            console.log(`Command: ${command} \nOutput: ${outputString}`);
+            //console.log(`Command: ${command} \nOutput: ${outputString}`);
             return outputString;
         } catch (error) {
             //vscode.window.showErrorMessage(`Error executing command: cd "${GIT_REPO}" && ${command}`);
@@ -98,12 +98,28 @@ export class FileManager {
         try {
             //const log = await this.git.log();
             const map: Map<string, DefaultLogFields> = new Map();
-            for (let l of log.all) {
-                map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
-                this.commitList[l.message] = l.date;
-                //console.log(`Commit: ${l.message}, ${l.hash}`);
-                //console.log(`Commit: ${l}`);
-            }
+            //vscode.window.withProgress({
+            //    location: vscode.ProgressLocation.Notification,
+            //    title: "Reading commit repository",
+            //    cancellable: false
+            //}, async (progress, token) => {
+                for (let l of log.all) {
+                    map.set(l.message, l);
+                    this.commitList[l.message] = l.date;
+                    if (ms.DEBUG) {
+                        console.log(`Commit: ${l.hash}`);
+                        console.log(`Author Name: ${l.author_name}`);
+                        console.log(`Author Email: ${l.author_email}`);
+                        console.log(`Date: ${l.date}`);
+                        console.log(`Message: ${l.message}`);
+                        console.log(`Body: ${l.body}`);
+                        console.log(`Refs: ${l.refs}`);
+                        console.log("");
+                    }
+                }
+            //        progress.report({ increment: 100 / log.all.length });
+            //    }
+            //});
 
             const current: DefaultLogFields = {
                 hash: '0000000000000000000000000000000000000000',
@@ -154,9 +170,9 @@ export class FileManager {
                 }
             }
 
-            if (changedFiles.length === 0) {
-                ms.debugInfo(`Founds 0 files with changes for commit ${commit}`);
-            }
+            //if (changedFiles.length === 0) {
+            //    ms.debugInfo(`Founds 0 files with changes for commit ${commit}`);
+            //}
             return changedFiles;
         } catch (error: unknown) {
             let message = 'Unknown error';
@@ -201,7 +217,6 @@ export class FileManager {
                 ms.debugInfo(`could not find path to file ${path.join(GIT_REPO, file)}`);
             }
         }
-        //set.forEach(file => this.gitHighlightFiles.add(file));
 
         if (ms.DEBUG) {
             ms.debugLog(`==Files with changes==`);
@@ -210,8 +225,6 @@ export class FileManager {
             ms.debugLog(`======================`);
         }
 
-        //vscode.window.showInformationMessage(`Changes found in ${this.gitHighlightFiles.size} files`);
-        //ms.debugLog(`Changes found in ${this.gitHighlightFiles.size} files`);
         if (this.gitHighlightFiles.size > 100) {
             let confirmation = await vscode.window.showInformationMessage(`Detected a large number of changes: ${this.gitHighlightFiles.size} files found with changes. Are you sure you wish to process them?`, { modal: true }, 'Yes', 'No');
 
@@ -221,13 +234,38 @@ export class FileManager {
         }
     }
 
+    //File should be in the form relative path
+    async updateFileHighlights(file: string): Promise<number> {
+        let count = 0;
+        try {
+            const blameFile: string[] = (await this.executeGitCommand(`blame -l ${file}`)).split('\n');
+            if (blameFile.length === 0)
+                return 0;
+
+            this.gitHighlightData[file] = [];
+            for (let lineNumber = 0; lineNumber < blameFile.length; lineNumber++) {
+                let lineHash = blameFile[lineNumber].split(' ')[0].trim();
+                if (this.commitHashSet.has(lineHash)) { //add hash to color here
+                    this.gitHighlightData[file].push(lineNumber);
+                    count++;
+                }
+            }
+        } catch (error) {
+            console.error(`Error getting blame for file: ${file}`);
+            ms.debugInfo(`Error getting blame for file: ${file}`);
+            return 0;
+        }
+        return count;
+    }
+
     //The main function that gets the highlights
     /*
     reliant on...
     @this.commitHashSet
     @this.gitHighlightData
     */
-    private async fillGitHighlightData() {
+    private async fillGitHighlightData(progress: any) {
+        const progressIncrement = 100 / this.gitHighlightFiles.size;
         for (let file of this.gitHighlightFiles) {
             ms.debugLog(`finding hash data for file: ${file}`);
             file = path.join(GIT_REPO, file);
@@ -236,42 +274,13 @@ export class FileManager {
                 this.fileCounter.set(file, count);
             if (ms.DEBUG) {
                 ms.debugLog(`==Highlights for ${file}==`);
-                ms.debugLog(`${this.gitHighlightData}`);
+                ms.debugLog(`${this.gitHighlightData[file]}`);
                 ms.debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(GIT_REPO, file)).toString()]}`);
                 ms.debugLog(`========================`);
             }
+            progress.report({ increment: progressIncrement});
         }
-        //ms.debugLog(`highlights filled for ${this.fileCounter.size} files}`);
-        //this.gitHighlightFiles = updatedGitHighlightFiles;
-    }
 
-    //File should be in the form relative path
-    async updateFileHighlights(file: string): Promise<number> {
-        //ms.debugLog(`updating fileHighlights for file ${file}`);
-        let foundInHashSet = false;
-        let count = 0;
-        try {
-            const blameFile: string[] = (await this.executeGitCommand(`blame -l ${file}`)).split('\n');
-            //const blameFile: string[] = (await this.git.raw(['blame', `-l`, `${file}`])).split('\n');
-            if (blameFile.length === 0)
-                return 0;
-
-            this.gitHighlightData[file] = [];
-            for (let lineNumber = 0; lineNumber < blameFile.length; lineNumber++) {
-                let lineHash = blameFile[lineNumber].split(' ')[0].trim();
-                if (this.commitHashSet.has(lineHash)) {
-                    this.gitHighlightData[file].push(lineNumber);
-                    foundInHashSet = true;
-                    count++;
-                }
-            }
-        } catch (error) {
-            console.error(`Error getting blame for file: ${file}`);
-            //vscode.window.showErrorMessage(`Error getting blame for file: ${file}`);
-            ms.debugInfo(`Error getting blame for file: ${file}`);
-            return 0;
-        }
-        return count;
     }
 
     async addCurrentBranch(): Promise<void> {
@@ -285,11 +294,10 @@ export class FileManager {
         }
     }
 
-    async addCommits(commitList: { [key: string]: string }): Promise<void> {
+    async addCommits(commitList: { [key: string]: string }, progress: any): Promise<void> {
         let temp: string[] = Object.keys(commitList);
-        // These are currently always called together so I should probably combine them
         await this.fillHashAndFileSet(temp);
-        await this.fillGitHighlightData();
+        await this.fillGitHighlightData(progress);
     }
 
     getGitHighlightData(): { [file: string]: number[] } {
@@ -336,8 +344,9 @@ export class FileManager {
                 res[commitMessage] = this.commitList[commitMessage];
             }
         }
-        if (Object.keys(res).length > 1 && !this.siblingMessageShown) {
-            ms.basicInfo(`Settings: Bundle Merged Branches enabled -- Will add commits bundled with merges`);
+        const numSiblings = Object.keys(res).length - 1;
+        if (numSiblings > 0 && !this.siblingMessageShown) {
+            ms.basicInfo(`Settings: Link merged commits enabled -- ${numSiblings} additional commits added to watch list`);
             this.siblingMessageShown = true;
         }
         return res;

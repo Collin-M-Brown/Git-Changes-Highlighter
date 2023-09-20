@@ -12,14 +12,19 @@ export class InfoManager {
     }
 
     static basicInfo(message: string) {
-        if (vscode.workspace.getConfiguration('GitVision').get('showBasicInfoMessages'))
-            vscode.window.showInformationMessage(`${message}`);
+        if (vscode.workspace.getConfiguration('GitVision').get('showBasicInfoMessages')) {
+            vscode.window.showInformationMessage(`${message}`, "Disable Notifications").then(selection => {
+                if (selection === "Disable Notifications") {
+                    vscode.workspace.getConfiguration('GitVision').update('showBasicInfoMessages', false, vscode.ConfigurationTarget.Global);
+                    vscode.workspace.getConfiguration('GitVision').update('showBasicInfoMessages', undefined, vscode.ConfigurationTarget.Workspace);
+                }
+            });
+        }
     }   
 
     static debugInfo(message: string) {
-
         if (vscode.workspace.getConfiguration('GitVision').get('showDebugInfoMessages')) {
-            vscode.window.showInformationMessage(`${message}`);
+
         }
     }
 
