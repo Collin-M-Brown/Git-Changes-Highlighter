@@ -13,7 +13,7 @@ This extension serves a similar purpose to a git heatmap but allows for tracking
 ![filter image](images/filterAndUpdates.png)
 
 ## Notes
-Notes on merged commits not appearing in Commit Repo dropdown:
+Notes on merged commits:
 When a branch is merged into another, a merged commit will be created. This commit will usually not appear in the git blame data unless conflicts were resolved in this commit.
 A typical merged commit might look like this
 
@@ -28,10 +28,9 @@ A typical merged commit might look like this
     Merge branch 'branch A' into 'main'
     Commit message of merge request
 
-in this case (Hash A) will not show up as blame in any files unless the commit (Merge branch 'branch A' into 'main')
-had conflicts that were resolved.
+in this case (Hash A)'s changes mirror its sibling commit but its changes wont show up in blame.
 
-Therefore, if there were not conflicts, I removed  (Merge branch 'branch A' into 'main') from the commit repo, since there would be a lot of empty commits.
+Therefore, merged commits will children will be added with their children. This option can be disabled in settings.
 
 
 ## Requirements

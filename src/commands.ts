@@ -170,7 +170,7 @@ export class CommandProcessor {
     addCommit(context: vscode.ExtensionContext) {
         let found = false;
         let commits: { [key: string]: string } = {};
-        this.commitRepoDropdown.onDidChangeSelection(e => {
+        this.commitRepoDropdown.onDidChangeSelection(async e => {
             //debugLog("hi");
             if (e.selection.length > 0) {
                 if (!found) {
@@ -180,7 +180,7 @@ export class CommandProcessor {
                     commits = this.commitRepo.getCommits();
                     const bundleBranches = vscode.workspace.getConfiguration('GitVision').get('bundleMergedBranches');
                     if (bundleBranches) {
-                        const brothers = this.fileManager.getBrothers(item.key);
+                        const brothers = (await this.fileManager.getBrothers(item.key));
                         for (let item of Object.entries(brothers)) {
                             const [key, value] = item;
                             delete commits[key];

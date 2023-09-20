@@ -60,16 +60,17 @@ export class FileManager {
     }
 
     private async setUp() {
-        this.headCommit = (this.executeCommand(`git rev-list --max-parents=0 HEAD`)).trim();
+        this.headCommit = (await this.executeGitCommand(`rev-list --max-parents=0 HEAD`)).trim();
         //this.headCommit = (await this.git.raw(['rev-list', '--max-parents=0', 'HEAD'])).trim();
         this.gitLogMap = this.setgitLogMap((await this.gitLogPromise));
         this.gitLsFiles = new Set<string>((await this.gitLsPromise).split('\n'));
     }
+    
 
-    private executeCommand(command: string): string {
+    private async executeGitCommand(command: string): Promise<string> {
         try {
             //const path = execSync(`cd ${GIT_REPO} ; git rev-parse --show-toplevel`).toString().trim();
-            const outputString = execSync(`cd "${GIT_REPO}" && ${command}`).toString().trim();
+            const outputString = (await this.git.raw(command.split(' '))).trim();
             console.log(`Command: ${command} \nOutput: ${outputString}`);
             return outputString;
         } catch (error) {
@@ -95,32 +96,18 @@ export class FileManager {
 
     private setgitLogMap(log: LogResult<DefaultLogFields>): Map<string, DefaultLogFields> {
         try {
+            //const log = await this.git.log();
             const map: Map<string, DefaultLogFields> = new Map();
-            let mergesIgnored = 0;
             for (let l of log.all) {
-                let hashes: any[] = [];
-                if (l.hash != this.headCommit)
-                    hashes = this.executeCommand(`git log --pretty=format:%H ${l.hash}^..${l.hash}`).split("\n");
-                let isDiff = true;
-                if (hashes.length >= 2) {
-                    const files = this.executeCommand(`git diff ${hashes[0]}..${hashes[1]} --name-only`).trim();
-                    isDiff = files.length > 0;
-                }
-                if (isDiff) {
-                    map.set(l.message, l); //TODO, add unique identifier
-                    this.commitList[l.message] = l.date;
-                }
-                else {
-                    mergesIgnored++;
-                }
+                map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
+                this.commitList[l.message] = l.date;
+                //console.log(`Commit: ${l.message}, ${l.hash}`);
+                //console.log(`Commit: ${l}`);
             }
-
-            ms.basicInfo(`${mergesIgnored} merge commits ignored due to having no conflicts.`);
 
             const current: DefaultLogFields = {
                 hash: '0000000000000000000000000000000000000000',
-                date: '', message: '', author_email: '', author_name: '', refs: '', body: '',
-            };
+                date: '', message: '', author_email: '', author_name: '', refs: '', body: '', };
             map.set('Uncommitted changes', current);
             return map;
         } catch (error) {
@@ -128,19 +115,19 @@ export class FileManager {
             return new Map();
         }
     }
-
+    
     // Only want parse files changed to save time.
     private async getChangedFiles(hash: string, commit: string): Promise<string[]> {
         try {
             let res: string[];
             if (hash === '0000000000000000000000000000000000000000')
-                res = this.executeCommand(`git diff HEAD --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
+                res = (await this.executeGitCommand(`diff HEAD --name-only`)).split('\n').map(s => s.trim()).filter(Boolean);
             else if (hash === this.headCommit)
-                res = this.executeCommand(`git diff HEAD --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
+                res = (await this.executeGitCommand(`diff HEAD --name-only`)).split('\n').map(s => s.trim()).filter(Boolean);
             else {
-                res = this.executeCommand(`git diff ${hash}~..${hash} --name-only`).split('\n').map(s => s.trim()).filter(Boolean);
+                res = (await this.executeGitCommand(`diff ${hash}~..${hash} --name-only`)).split('\n').map(s => s.trim()).filter(Boolean);
                 if (vscode.workspace.getConfiguration('GitVision').get('findRenamedFiles'))
-                    res = res.concat(this.executeCommand(`git diff ${hash}~..HEAD --find-renames=70% --name-only`).split('\n').map(s => s.trim()).filter(Boolean));
+                    res = res.concat((await this.executeGitCommand(`diff ${hash}~..HEAD --find-renames=70% --name-only`)).split('\n').map(s => s.trim()).filter(Boolean));
             }
 
             if (res.length > 100)
@@ -153,11 +140,17 @@ export class FileManager {
                 }
                 else {
                     file = file.split("/").slice(-1)[0];
-                    const newFile = this.executeCommand(`git ls-files | grep ${file} || true`).trim(); //TODO maybe use map to prevent repeat searches
+                    //const newFile = (await this.executeGitCommand(`ls-files | grep ${file} || true`)).trim(); 
+                    //const matchedFiles = newFile.split('\n').filter(f => f.includes(file));
+                    //TODO maybe use map to prevent repeat searches
                     //TODO: handle multiple files returned. For now, just do nothing as we can't really know if it was renamed.
                     //Also, this will cause an issue if two files have the same name but one is deleted. But should be fine as long as hash is not found.
-                    if (newFile.length > 0 && newFile.includes("\n") === false)
-                        changedFiles.push(newFile);
+                    const matchedFiles = Array.from(this.gitLsFiles).filter(f => f.includes(file));
+
+                    // Handle multiple files returned
+                    if (matchedFiles.length === 1) {
+                        changedFiles.push(matchedFiles[0]);
+                    }
                 }
             }
 
@@ -258,7 +251,7 @@ export class FileManager {
         let foundInHashSet = false;
         let count = 0;
         try {
-            const blameFile: string[] = this.executeCommand(`git blame -l ${file}`).split('\n');
+            const blameFile: string[] = (await this.executeGitCommand(`blame -l ${file}`)).split('\n');
             //const blameFile: string[] = (await this.git.raw(['blame', `-l`, `${file}`])).split('\n');
             if (blameFile.length === 0)
                 return 0;
@@ -331,19 +324,22 @@ export class FileManager {
         return this.commitList;
     }
 
-    getBrothers(commit: string) {
+    private siblingMessageShown: boolean = false;
+    async getBrothers(commit: string) {
         const hash = this.gitLogMap.get(commit)?.hash;
         let res: { [key: string]: string } = {};
         if (hash) {
-            const hashes = this.executeCommand(`git log --pretty=format:%H ${hash}^1..${hash}`).split("\n");
+            const hashes = (await this.executeGitCommand(`log --pretty=format:%H ${hash}^1..${hash}`)).split("\n");
             for (let h of hashes) {
                 //this.commitList[l.message] = l.date;
-                const commitMessage = this.executeCommand(`git show -s --format=%s ${h}`).trim();
+                const commitMessage = (await this.executeGitCommand(`show -s --format=%s ${h}`)).trim();
                 res[commitMessage] = this.commitList[commitMessage];
             }
         }
-        if (Object.keys(res).length > 1)
-            ms.basicInfo(`Found ${Object.keys(res).length} siblings for commit ${commit}`);
+        if (Object.keys(res).length > 1 && !this.siblingMessageShown) {
+            ms.basicInfo(`Settings: Bundle Merged Branches enabled -- Will add commits bundled with merges`);
+            this.siblingMessageShown = true;
+        }
         return res;
     }
 }

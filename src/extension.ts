@@ -18,7 +18,7 @@ function getGitRepo(): boolean {
         console.log(`workspace path: ${ms.getWorkspacePath()}`);
         GIT_REPO = execSync(`cd ${ms.getWorkspacePath()} && git rev-parse --show-toplevel`).toString().trim();// maybe cd at start
         //console.log(`git repo found : ${GIT_REPO}`);
-        return GIT_REPO.length != 0;
+        return GIT_REPO.length !== 0;
     } catch (error) {
         return false;
     }
