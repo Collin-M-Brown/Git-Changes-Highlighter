@@ -62,7 +62,7 @@ export class FileManager {
     private async setUp() {
         this.headCommit = (await this.executeGitCommand(`rev-list --max-parents=0 HEAD`)).trim();
         //this.headCommit = (await this.git.raw(['rev-list', '--max-parents=0', 'HEAD'])).trim();
-        this.gitLogMap = this.setgitLogMap((await this.gitLogPromise));
+        this.gitLogMap = await this.setgitLogMap((await this.gitLogPromise));
         this.gitLsFiles = new Set<string>((await this.gitLsPromise).split('\n'));
     }
     
@@ -94,20 +94,34 @@ export class FileManager {
         }
     }
 
-    private setgitLogMap(log: LogResult<DefaultLogFields>): Map<string, DefaultLogFields> {
+    private async setgitLogMap(log: LogResult<DefaultLogFields>): Promise<Map<string, DefaultLogFields>> {
         try {
-            //const log = await this.git.log();
             const map: Map<string, DefaultLogFields> = new Map();
-            for (let l of log.all) {
-                map.set(l.message, l); //todo, maybe add multiple hashes if unsure of message.
-                this.commitList[l.message] = l.date;
-                //console.log(`Commit: ${l.message}, ${l.hash}`);
-                //console.log(`Commit: ${l}`);
+            let mergesIgnored = 0;
+    
+            const diffs = log.all.slice(0, -1).map((l, i) => 
+                this.executeGitCommand(`diff ${l.hash}..${log.all[i+1].hash} --name-only`)
+                    .then(diff => ({isDiff: diff.trim().length > 0, commit: l}))
+            );
+    
+            const results = await Promise.all(diffs);
+    
+            for (let result of results) {
+                if (result.isDiff) {
+                    map.set(result.commit.message, result.commit); //TODO, add unique identifier
+                    this.commitList[result.commit.message] = result.commit.date;
+                }
+                else {
+                    mergesIgnored++;
+                }
             }
-
+    
+            ms.basicInfo(`${mergesIgnored} merge commits ignored due to having no conflicts.`);
+    
             const current: DefaultLogFields = {
                 hash: '0000000000000000000000000000000000000000',
-                date: '', message: '', author_email: '', author_name: '', refs: '', body: '', };
+                date: '', message: '', author_email: '', author_name: '', refs: '', body: '',
+            };
             map.set('Uncommitted changes', current);
             return map;
         } catch (error) {

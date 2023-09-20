@@ -8,7 +8,7 @@
     "description": "Highlight git blame data for multiple commits at once. Like a selective heatmap",
     "icon": "./images/Git_vision_Logo.png",
     "publisher": "collin-m-brown",
-    "version": "1.0.54",
+    "version": "1.0.57",
     "engines": {
         "vscode": "^1.81.0"
     },

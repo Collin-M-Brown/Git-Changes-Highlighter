@@ -31,6 +31,7 @@ A typical merged commit might look like this
 in this case (Hash A)'s changes mirror its sibling commit but its changes wont show up in blame.
 
 Therefore, merged commits will children will be added with their children. This option can be disabled in settings.
+I will also clear out some of the obvious merges that added no changes to make the commit repo view cleaner.
 
 
 ## Requirements
