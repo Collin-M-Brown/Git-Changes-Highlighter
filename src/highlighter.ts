@@ -2,6 +2,15 @@ import * as vscode from 'vscode';
 import * as _ from 'lodash';
 import { InfoManager as ms } from './infoManager';
 
+/*
+Mayabe I should make a Commit class
+
+each commit would have a 
+-Message
+-hash
+- { [file: string]: number[] }
+-color
+*/
 
 export class HighlightProcessor {
     private highlights: { [uri: string]: number[] };
@@ -16,7 +25,7 @@ export class HighlightProcessor {
         });
         //console.log(vscode.workspace.getConfiguration('GitVision').get('realtimeHighlighting'));
         //if (vscode.workspace.getConfiguration('GitVision').get('realtimeHighlighting'))
-        this.fileWatcher();
+        //this.fileWatcher();
     }
 
     loadHighlights(newHighlights: {[fileName: string]: number[]}) {
@@ -62,7 +71,7 @@ export class HighlightProcessor {
                 this.decorationType = vscode.window.createTextEditorDecorationType({
                     backgroundColor: color as string,
                     isWholeLine: true,
-                    overviewRulerColor: 'rgb(79, 190, 255)',
+                    overviewRulerColor: `rgb(79, 190, 255)`,
                     overviewRulerLane: vscode.OverviewRulerLane.Full,
                     
                 });

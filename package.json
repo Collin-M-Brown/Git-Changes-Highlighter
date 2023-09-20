@@ -100,31 +100,25 @@
                         "title": "Show Basic Info Popups",
                         "type": "boolean",
                         "default": true,
-                        "description": "Show Basic Info Popups; general notifications"
+                        "description": "Show Basic Info Popups && general notifications"
                     },
                     "GitVision.showDebugInfoMessages": {
-                        "title": "Show Additional Info Popups",
+                        "title": "Show Debugging Info Popups",
                         "type": "boolean",
                         "default": false,
-                        "description": "Show Additional Info Popups for debugging purposes"
+                        "description": "Show Debugging Info Popups"
                     },
                     "GitVision.findRenamedFiles": {
                         "title": "Find Renamed Files",
                         "type": "boolean",
                         "default": false,
-                        "description": "Will find files touched by commit even if file name was changed. Disabled by default because it adds a lot of processing time."
+                        "description": "Find blame in renamed files. This can be slow."
                     },
                     "GitVision.highlightColor": {
                         "type": "string",
                         "default": "#2259b27e",
                         "description": "The color to use for highlights",
                         "scope": "application"
-                    },
-                    "GitVision.enableRealtimeHighlighting": {
-                        "title": "Enable Realtime Highlighting",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Enables real time highlighting (This can put a load on the system)"
                     },
                     "GitVision.filterString": {
                         "title": "Filter String for commit repo",
@@ -133,10 +127,10 @@
                         "default": ""
                     },
                     "GitVision.bundleMergedBranches": {
-                        "title": "Bundles Merged Branches",
+                        "title": "Link merged commits",
                         "type": "boolean",
                         "default": true,
-                        "description": "Bundles branches together when adding merged commit to list"
+                        "description": "Links merged commits with siblings"
                     }
                 }
             }
