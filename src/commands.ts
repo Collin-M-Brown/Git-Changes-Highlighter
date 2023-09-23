@@ -20,6 +20,7 @@ export class CommandProcessor {
     private commitRepoDropdown: vscode.TreeView<{ [key: string]: string }>;
     private fileWatcherStarted = false;
     private commitsOn: boolean = false;
+    private commandRunning: boolean = false;
 
     private constructor(context: vscode.ExtensionContext) {
         this.fileTree = new fileTree(GIT_REPO, new Set<string>());
@@ -52,20 +53,17 @@ export class CommandProcessor {
 
     highlightLine(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.highlightLine', () => {
-            //debugLog("Running command: GitVision.highlightLine");
             this.hp.highlightLine();
         });
-        //debugLog("highlight:line registered");
         context.subscriptions.push(disposable);
     }
 
     highlightCommits(context: vscode.ExtensionContext) {
-        let commandRunning = false;
         let disposable = vscode.commands.registerCommand('GitVision.highlightCommits', async () => {
-            //debugLog("Running command: GitVision.highlightCommits");
-            if (commandRunning) return;
-            commandRunning = true;
-
+            if (this.isCommandRunning())
+                return;
+            this.commandRunning = true;
+    
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: "Processing commit list",
@@ -86,9 +84,11 @@ export class CommandProcessor {
                     this.fileWatcherStarted = true;
                 }
                 this.commitsOn = true;
-                commandRunning = false;
+            }).then(() => {
+                this.commandRunning = false;
             });
         });
+    
         context.subscriptions.push(disposable);
     }
 
@@ -135,7 +135,6 @@ export class CommandProcessor {
 
     clearAllHighlights(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.clearAll', async () => {
-            //debugLog("Running command: GitVision.clearAll");
             let confirmation = await vscode.window.showInformationMessage('Are you sure you want to clear the list?', { modal: true }, 'Yes', 'No');
 
             if (confirmation === 'Yes') {
@@ -181,12 +180,13 @@ export class CommandProcessor {
         let found = false;
         let commits: { [key: string]: string } = {};
         this.commitRepoDropdown.onDidChangeSelection(async e => {
-            //debugLog("hi");
+            if (this.isCommandRunning())
+                return;
+            this.commandRunning = true;
+
             if (e.selection.length > 0) {
                 if (!found) {
                     const item = e.selection[0] as { key: string, value: string };;
-                    //vscode.window.showInformationMessage(`You clicked on commit: ${item.commitMessage}`);
-                    //debugLog(`You clicked on commit: ${item.key}`);
                     commits = this.commitRepo.getCommits();
                     const bundleBranches = vscode.workspace.getConfiguration('GitVision').get('bundleMergedBranches');
                     if (bundleBranches) {
@@ -211,6 +211,8 @@ export class CommandProcessor {
                 this.commitRepo.loadCommits(commits);
                 found = false;
             }
+
+            this.commandRunning = false;
         });
     }
 
@@ -218,7 +220,10 @@ export class CommandProcessor {
         let found = false;
         let commits: { [key: string]: string } = {};
         this.commitViewDropdown.onDidChangeSelection(e => {
-            //debugLog("hi");
+            if (this.isCommandRunning())
+                return;
+            this.commandRunning = true;
+
             if (e.selection.length > 0) {
                 if (!found) {
                     const item = e.selection[0] as { key: string, value: string };;
@@ -235,14 +240,22 @@ export class CommandProcessor {
                 this.commitView.loadCommits(commits);
                 found = false;
             }
+
+            this.commandRunning = false;
         });
     }
 
     hideHighlights(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.hideHighlights', async () => {
+            if (this.isCommandRunning())
+                return;
+            this.commandRunning = true;
+
             //debugLog("Running command: GitVision.hideHighlights");
             this.hp.clearAllHighlights();
             this.commitsOn = false;
+
+            this.commandRunning = false;
         });
         context.subscriptions.push(disposable);
     }
@@ -273,6 +286,10 @@ export class CommandProcessor {
 
     filterCommitRepository(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.filterCommitRepository', async () => {
+            if (this.isCommandRunning())
+                return;
+            this.commandRunning = true;
+
             await vscode.workspace.getConfiguration('GitVision').update('filterString', undefined, vscode.ConfigurationTarget.Workspace);
             const filterString = vscode.workspace.getConfiguration('GitVision').get('filterString');
             let filter: string = "";
@@ -281,13 +298,11 @@ export class CommandProcessor {
                 filter = filterString.toString().toLowerCase();
             else {
                 vscode.commands.executeCommand('workbench.action.openSettings', 'Git Vision: Filter String');
-                //ms.basicInfo("Set filter string in extension settings");
-                //vscode.window.showInformationMessage("Empty filter found in extension settings");
             }
 
-            //console.debug(`filter = ${filter}`);
             this.commitRepo.loadFilter(filter);
             this.commitRepo.reload();
+            this.commandRunning = false;
             
         });
         context.subscriptions.push(disposable);
@@ -300,5 +315,13 @@ export class CommandProcessor {
             this.commitRepo.reload();
         });
         context.subscriptions.push(disposable);
+    }
+
+    private isCommandRunning(): boolean {
+        if (this.commandRunning) {
+            ms.basicInfo(`A command is still running. Please wait for it to finish.`);
+            return true;
+        }
+        return false;
     }
 }
