@@ -15,7 +15,7 @@ export let GIT_REPO: string;
 
 function getGitRepo(): boolean {
     try {
-        console.log(`workspace path: ${ms.getWorkspacePath()}`);
+        //console.log(`workspace path: ${ms.getWorkspacePath()}`);
         GIT_REPO = execSync(`cd ${ms.getWorkspacePath()} && git rev-parse --show-toplevel`).toString().trim();// maybe cd at start
         //console.log(`git repo found : ${GIT_REPO}`);
         return GIT_REPO.length !== 0;
@@ -27,7 +27,7 @@ function getGitRepo(): boolean {
 export async function activate(context: vscode.ExtensionContext) {
     //startProfile();
     const isRepo = getGitRepo();
-    console.log(`GitVision: ${isRepo}, ${GIT_REPO}}`);
+    //console.log(`GitVision: ${isRepo}, ${GIT_REPO}}`);
     vscode.commands.executeCommand('setContext', 'GitVision.isGitRepository', isRepo);
     if (!isRepo)
         return;

@@ -285,7 +285,7 @@ export class CommandProcessor {
                 //vscode.window.showInformationMessage("Empty filter found in extension settings");
             }
 
-            console.debug(`filter = ${filter}`);
+            //console.debug(`filter = ${filter}`);
             this.commitRepo.loadFilter(filter);
             this.commitRepo.reload();
             
