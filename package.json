@@ -131,6 +131,12 @@
                         "type": "boolean",
                         "default": true,
                         "description": "Links merged commits with siblings"
+                    },
+                    "GitVision.trimEmptyCommits": {
+                        "title": "Trim Empty Commits from Commit Repo (usually empty merge shells)",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Merge commits will often have no blame when auto merged."
                     }
                 }
             }

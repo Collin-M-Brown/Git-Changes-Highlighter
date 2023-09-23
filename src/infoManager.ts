@@ -34,7 +34,7 @@ export class InfoManager {
             return '';
         }
         return vscode.workspace.workspaceFolders[0].uri.fsPath;
-    }
+    } 
 
     static getCommitList(): string[] {
 

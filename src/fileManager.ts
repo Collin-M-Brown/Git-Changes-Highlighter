@@ -62,7 +62,11 @@ export class FileManager {
     private async setUp() {
         this.headCommit = (await this.executeGitCommand(`rev-list --max-parents=0 HEAD`)).trim();
         //this.headCommit = (await this.git.raw(['rev-list', '--max-parents=0', 'HEAD'])).trim();
-        this.gitLogMap = this.setgitLogMap((await this.gitLogPromise));
+        const doTrimMerges: boolean = vscode.workspace.getConfiguration('GitVision').get<boolean>('trimEmptyCommits') || false;
+        if (doTrimMerges)
+            this.gitLogMap = await this.trimGitLogMap((await this.gitLogPromise));
+        else    
+            this.gitLogMap = this.setgitLogMap((await this.gitLogPromise));
         this.gitLsFiles = new Set<string>((await this.gitLsPromise).split('\n'));
     }
     
@@ -96,13 +100,8 @@ export class FileManager {
 
     private setgitLogMap(log: LogResult<DefaultLogFields>): Map<string, DefaultLogFields> {
         try {
-            //const log = await this.git.log();
+
             const map: Map<string, DefaultLogFields> = new Map();
-            //vscode.window.withProgress({
-            //    location: vscode.ProgressLocation.Notification,
-            //    title: "Reading commit repository",
-            //    cancellable: false
-            //}, async (progress, token) => {
                 for (let l of log.all) {
                     map.set(l.message, l);
                     this.commitList[l.message] = l.date;
@@ -117,13 +116,46 @@ export class FileManager {
                         console.log("");
                     }
                 }
-            //        progress.report({ increment: 100 / log.all.length });
-            //    }
-            //});
 
             const current: DefaultLogFields = {
                 hash: '0000000000000000000000000000000000000000',
                 date: '', message: '', author_email: '', author_name: '', refs: '', body: '', };
+            map.set('Uncommitted changes', current);
+            return map;
+        } catch (error) {
+            vscode.window.showErrorMessage(`Error getting git log`);
+            return new Map();
+        }
+    }
+
+    private async trimGitLogMap(log: LogResult<DefaultLogFields>): Promise<Map<string, DefaultLogFields>> {
+        try {
+            const map: Map<string, DefaultLogFields> = new Map();
+            let mergesIgnored = 0;
+    
+            const diffs = log.all.slice(0, -1).map((l, i) => 
+                this.executeGitCommand(`diff ${l.hash}..${log.all[i+1].hash} --name-only`)
+                    .then(diff => ({isDiff: diff.trim().length > 0, commit: l}))
+            );
+    
+            const results = await Promise.all(diffs);
+    
+            for (let result of results) {
+                if (result.isDiff) {
+                    map.set(result.commit.message, result.commit); //TODO, add unique identifier
+                    this.commitList[result.commit.message] = result.commit.date;
+                }
+                else {
+                    mergesIgnored++;
+                }
+            }
+    
+            ms.basicInfo(`${mergesIgnored} merge commits ignored due to having no conflicts.`);
+    
+            const current: DefaultLogFields = {
+                hash: '0000000000000000000000000000000000000000',
+                date: '', message: '', author_email: '', author_name: '', refs: '', body: '',
+            };
             map.set('Uncommitted changes', current);
             return map;
         } catch (error) {
