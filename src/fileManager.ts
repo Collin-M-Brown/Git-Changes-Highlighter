@@ -29,6 +29,7 @@ import simpleGit, { SimpleGit, DefaultLogFields, LogResult } from 'simple-git';
 import { GIT_REPO } from './extension';
 import { InfoManager as ms } from './infoManager';
 import { merge } from 'lodash';
+import PQueue from 'p-queue';
 
 const fs = require('fs');
 const path = require('path');
@@ -145,11 +146,11 @@ export class FileManager {
                 }
             }
             
-            // Process each commit
+            let count = 0;
             for (let i = 0; i < log.all.length; i++) {
                 let l = log.all[i];
                 if (!mergeCommits.has(l.hash)) {
-                    l.message = `(${i}): ${l.message}`;
+                    l.message = `(${count++}): ${l.message}`;
                     map.set(l.message, l);
                     this.commitList[l.message] = l.date;
                 } else {
@@ -303,23 +304,30 @@ export class FileManager {
     @this.commitHashSet
     @this.gitHighlightData
     */
+
     private async fillGitHighlightData(progress: any) {
         const progressIncrement = 100 / this.gitHighlightFiles.size;
+        
+        const queue = new PQueue({concurrency: 10});
+        
         for (let file of this.gitHighlightFiles) {
-            ms.debugLog(`finding hash data for file: ${file}`);
-            file = path.join(GIT_REPO, file);
-            const count = (await this.updateFileHighlights(file));
-            if (count)
-                this.fileCounter.set(file, count);
-            if (ms.DEBUG) {
-                ms.debugLog(`==Highlights for ${file}==`);
-                ms.debugLog(`${this.gitHighlightData[file]}`);
-                ms.debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(GIT_REPO, file)).toString()]}`);
-                ms.debugLog(`========================`);
-            }
-            progress.report({ increment: progressIncrement});
+            queue.add(async () => {
+                ms.debugLog(`finding hash data for file: ${file}`);
+                file = path.join(GIT_REPO, file);
+                const count = await this.updateFileHighlights(file);
+                if (count)
+                    this.fileCounter.set(file, count);
+                if (ms.DEBUG) {
+                    ms.debugLog(`==Highlights for ${file}==`);
+                    ms.debugLog(`${this.gitHighlightData[file]}`);
+                    ms.debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(GIT_REPO, file)).toString()]}`);
+                    ms.debugLog(`========================`);
+                }
+                progress.report({ increment: progressIncrement});
+            });
         }
-
+    
+        await queue.onIdle();
     }
 
     async addCurrentBranch(): Promise<void> {
