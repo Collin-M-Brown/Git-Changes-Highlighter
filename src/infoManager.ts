@@ -5,6 +5,7 @@ import * as fs from 'fs';
 export class InfoManager {
     static STRESS_DEBUG = false;
     static DEBUG = false;
+    static TEST_MERGED_COMMITS = vscode.workspace.getConfiguration('GitVision').get('testMergedOnly');
 
     static debugLog(message: string | undefined) {
         if (this.DEBUG)

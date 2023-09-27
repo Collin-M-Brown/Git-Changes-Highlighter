@@ -28,6 +28,7 @@ import { execSync } from 'child_process';
 import simpleGit, { SimpleGit, DefaultLogFields, LogResult } from 'simple-git';
 import { GIT_REPO } from './extension';
 import { InfoManager as ms } from './infoManager';
+import { merge } from 'lodash';
 
 const fs = require('fs');
 const path = require('path');
@@ -62,8 +63,8 @@ export class FileManager {
     private async setUp() {
         this.headCommit = (await this.executeGitCommand(`rev-list --max-parents=0 HEAD`)).trim();
         //this.headCommit = (await this.git.raw(['rev-list', '--max-parents=0', 'HEAD'])).trim();
-        const doTrimMerges: boolean = vscode.workspace.getConfiguration('GitVision').get<boolean>('trimEmptyCommits') || false;
-        if (doTrimMerges)
+        const showAllCommits: boolean = vscode.workspace.getConfiguration('GitVision').get<boolean>('showAllCommits') || false;
+        if (!showAllCommits)
             this.gitLogMap = await this.trimGitLogMap((await this.gitLogPromise));
         else    
             this.gitLogMap = this.setgitLogMap((await this.gitLogPromise));
@@ -133,24 +134,33 @@ export class FileManager {
             const map: Map<string, DefaultLogFields> = new Map();
             let mergesIgnored = 0;
     
-            const diffs = log.all.slice(0, -1).map((l, i) => 
-                this.executeGitCommand(`diff ${l.hash}..${log.all[i+1].hash} --name-only`)
-                    .then(diff => ({isDiff: diff.trim().length > 0, commit: l}))
-            );
-    
-            const results = await Promise.all(diffs);
-    
-            for (let result of results) {
-                if (result.isDiff) {
-                    map.set(result.commit.message, result.commit); //TODO, add unique identifier
-                    this.commitList[result.commit.message] = result.commit.date;
+            for (let i = 0; i < log.all.length; i++) {
+                let l = log.all[i];
+                const hashes = (await this.executeGitCommand(`log --pretty=format:%H ${l.hash}^1..${l.hash}`)).split("\n");
+                if (hashes && hashes.length === 1 && !ms.TEST_MERGED_COMMITS) {
+                    l.message = `(${1}): ${l.message}`;
+                    map.set(l.message, l);
+                    this.commitList[l.message] = l.date;
+                    if (ms.DEBUG) {
+                        console.log(`Commit: ${l.hash}`);
+                        console.log(`Author Name: ${l.author_name}`);
+                        console.log(`Author Email: ${l.author_email}`);
+                        console.log(`Date: ${l.date}`);
+                        console.log(`Message: ${l.message}`);
+                        console.log(`Body: ${l.body}`);
+                        console.log(`Refs: ${l.refs}`);
+                        console.log("");
+                    }
                 }
-                else {
+                else if (hashes && hashes.length > 1 && ms.TEST_MERGED_COMMITS) {
+                    map.set(l.message, l);
+                    this.commitList[l.message] = l.date;
+                }
+                else
                     mergesIgnored++;
-                }
             }
     
-            ms.basicInfo(`${mergesIgnored} merge commits ignored due to having no conflicts.`);
+            ms.basicInfo(`${mergesIgnored} merge commits removed from commit repo (Disable this through settings).`);
     
             const current: DefaultLogFields = {
                 hash: '0000000000000000000000000000000000000000',
