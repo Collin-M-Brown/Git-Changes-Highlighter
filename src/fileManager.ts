@@ -28,6 +28,8 @@ import { execSync } from 'child_process';
 import simpleGit, { SimpleGit, DefaultLogFields, LogResult } from 'simple-git';
 import { GIT_REPO } from './extension';
 import { InfoManager as ms } from './infoManager';
+import { merge } from 'lodash';
+import PQueue from 'p-queue';
 
 const fs = require('fs');
 const path = require('path');
@@ -62,8 +64,8 @@ export class FileManager {
     private async setUp() {
         this.headCommit = (await this.executeGitCommand(`rev-list --max-parents=0 HEAD`)).trim();
         //this.headCommit = (await this.git.raw(['rev-list', '--max-parents=0', 'HEAD'])).trim();
-        const doTrimMerges: boolean = vscode.workspace.getConfiguration('GitVision').get<boolean>('trimEmptyCommits') || false;
-        if (doTrimMerges)
+        const showAllCommits: boolean = vscode.workspace.getConfiguration('GitVision').get<boolean>('showAllCommits') || false;
+        if (!showAllCommits)
             this.gitLogMap = await this.trimGitLogMap((await this.gitLogPromise));
         else    
             this.gitLogMap = this.setgitLogMap((await this.gitLogPromise));
@@ -132,25 +134,31 @@ export class FileManager {
         try {
             const map: Map<string, DefaultLogFields> = new Map();
             let mergesIgnored = 0;
-    
-            const diffs = log.all.slice(0, -1).map((l, i) => 
-                this.executeGitCommand(`diff ${l.hash}..${log.all[i+1].hash} --name-only`)
-                    .then(diff => ({isDiff: diff.trim().length > 0, commit: l}))
-            );
-    
-            const results = await Promise.all(diffs);
-    
-            for (let result of results) {
-                if (result.isDiff) {
-                    map.set(result.commit.message, result.commit); //TODO, add unique identifier
-                    this.commitList[result.commit.message] = result.commit.date;
+            const gitLogOutput = await this.executeGitCommand('log --pretty=format:%H-%P');
+            const commitsWithParents = gitLogOutput.split('\n');
+            const mergeCommits = new Set<string>();
+            for (const line of commitsWithParents) {
+                const fields = line.split('-');
+                const commitHash = fields[0];
+                const parents = fields[1].split(' '); 
+                if (parents.length > 1) {
+                    mergeCommits.add(commitHash);
                 }
-                else {
+            }
+            
+            let count = 0;
+            for (let i = 0; i < log.all.length; i++) {
+                let l = log.all[i];
+                if (!mergeCommits.has(l.hash)) {
+                    l.message = `(${count++}): ${l.message}`;
+                    map.set(l.message, l);
+                    this.commitList[l.message] = l.date;
+                } else {
                     mergesIgnored++;
                 }
             }
     
-            ms.basicInfo(`${mergesIgnored} merge commits ignored due to having no conflicts.`);
+            ms.basicInfo(`${mergesIgnored} merge commits removed from commit repo (Disable this through settings).`);
     
             const current: DefaultLogFields = {
                 hash: '0000000000000000000000000000000000000000',
@@ -296,23 +304,30 @@ export class FileManager {
     @this.commitHashSet
     @this.gitHighlightData
     */
+
     private async fillGitHighlightData(progress: any) {
         const progressIncrement = 100 / this.gitHighlightFiles.size;
+        
+        const queue = new PQueue({concurrency: 10});
+        
         for (let file of this.gitHighlightFiles) {
-            ms.debugLog(`finding hash data for file: ${file}`);
-            file = path.join(GIT_REPO, file);
-            const count = (await this.updateFileHighlights(file));
-            if (count)
-                this.fileCounter.set(file, count);
-            if (ms.DEBUG) {
-                ms.debugLog(`==Highlights for ${file}==`);
-                ms.debugLog(`${this.gitHighlightData[file]}`);
-                ms.debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(GIT_REPO, file)).toString()]}`);
-                ms.debugLog(`========================`);
-            }
-            progress.report({ increment: progressIncrement});
+            queue.add(async () => {
+                ms.debugLog(`finding hash data for file: ${file}`);
+                file = path.join(GIT_REPO, file);
+                const count = await this.updateFileHighlights(file);
+                if (count)
+                    this.fileCounter.set(file, count);
+                if (ms.DEBUG) {
+                    ms.debugLog(`==Highlights for ${file}==`);
+                    ms.debugLog(`${this.gitHighlightData[file]}`);
+                    ms.debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(GIT_REPO, file)).toString()]}`);
+                    ms.debugLog(`========================`);
+                }
+                progress.report({ increment: progressIncrement});
+            });
         }
-
+    
+        await queue.onIdle();
     }
 
     async addCurrentBranch(): Promise<void> {
