@@ -133,31 +133,28 @@ export class FileManager {
         try {
             const map: Map<string, DefaultLogFields> = new Map();
             let mergesIgnored = 0;
-    
+            const gitLogOutput = await this.executeGitCommand('log --pretty=format:%H-%P');
+            const commitsWithParents = gitLogOutput.split('\n');
+            const mergeCommits = new Set<string>();
+            for (const line of commitsWithParents) {
+                const fields = line.split('-');
+                const commitHash = fields[0];
+                const parents = fields[1].split(' '); 
+                if (parents.length > 1) {
+                    mergeCommits.add(commitHash);
+                }
+            }
+            
+            // Process each commit
             for (let i = 0; i < log.all.length; i++) {
                 let l = log.all[i];
-                const hashes = (await this.executeGitCommand(`log --pretty=format:%H ${l.hash}^1..${l.hash}`)).split("\n");
-                if (hashes && hashes.length === 1 && !ms.TEST_MERGED_COMMITS) {
-                    l.message = `(${1}): ${l.message}`;
+                if (!mergeCommits.has(l.hash)) {
+                    l.message = `(${i}): ${l.message}`;
                     map.set(l.message, l);
                     this.commitList[l.message] = l.date;
-                    if (ms.DEBUG) {
-                        console.log(`Commit: ${l.hash}`);
-                        console.log(`Author Name: ${l.author_name}`);
-                        console.log(`Author Email: ${l.author_email}`);
-                        console.log(`Date: ${l.date}`);
-                        console.log(`Message: ${l.message}`);
-                        console.log(`Body: ${l.body}`);
-                        console.log(`Refs: ${l.refs}`);
-                        console.log("");
-                    }
-                }
-                else if (hashes && hashes.length > 1 && ms.TEST_MERGED_COMMITS) {
-                    map.set(l.message, l);
-                    this.commitList[l.message] = l.date;
-                }
-                else
+                } else {
                     mergesIgnored++;
+                }
             }
     
             ms.basicInfo(`${mergesIgnored} merge commits removed from commit repo (Disable this through settings).`);
