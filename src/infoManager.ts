@@ -25,7 +25,7 @@ export class InfoManager {
 
     static debugInfo(message: string) {
         if (vscode.workspace.getConfiguration('GitVision').get('showDebugInfoMessages')) {
-
+            vscode.window.showInformationMessage(`${message}`);
         }
     }
 

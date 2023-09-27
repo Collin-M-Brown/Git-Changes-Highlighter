@@ -210,9 +210,9 @@ export class FileManager {
                 }
             }
 
-            //if (changedFiles.length === 0) {
-            //    ms.debugInfo(`Founds 0 files with changes for commit ${commit}`);
-            //}
+            if (changedFiles.length === 0) {
+                ms.debugInfo(`Founds 0 files with changes for commit ${commit}`);
+            }
             return changedFiles;
         } catch (error: unknown) {
             let message = 'Unknown error';
