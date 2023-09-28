@@ -186,8 +186,10 @@ export class FileManager {
                     res = res.concat((await this.executeGitCommand(`diff ${hash}~..HEAD --find-renames=70% --name-only`)).split('\n').map(s => s.trim()).filter(Boolean));
             }
 
-            if (res.length > 100)
-                return [];
+            ms.debugInfo(`res for hash ${hash} = ${res}`);
+
+            //if (res.length > 100)
+            //    return [];
 
             let changedFiles: string[] = [];
             for (let file of res) {
@@ -248,6 +250,7 @@ export class FileManager {
         });
 
         const set = new Set<string>((await Promise.all(filePromises)).flat());
+        ms.debugInfo(`${set.size} potential files found.`);
         for (const file of set) {
             if (fs.existsSync(path.join(GIT_REPO, file))) {
                 //ms.debugLog(`File exists: ${file}`);
@@ -258,6 +261,7 @@ export class FileManager {
             }
         }
 
+        ms.debugInfo(`${this.gitHighlightFiles.size} files with changes found.`);
         if (ms.DEBUG) {
             ms.debugLog(`==Files with changes==`);
             for (let file of this.gitHighlightFiles)
