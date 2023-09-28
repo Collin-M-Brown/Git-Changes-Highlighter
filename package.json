@@ -126,12 +126,6 @@
                         "type": "string",
                         "default": ""
                     },
-                    "GitVision.bundleMergedBranches": {
-                        "title": "Link merged commits",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Links merged commits with siblings"
-                    },
                     "GitVision.showAllCommits": {
                         "title": "Show all commits in commit repo (usually empty merge shells)",
                         "type": "boolean",

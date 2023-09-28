@@ -188,7 +188,9 @@ export class CommandProcessor {
                 if (!found) {
                     const item = e.selection[0] as { key: string, value: string };;
                     commits = this.commitRepo.getCommits();
-                    const bundleBranches = vscode.workspace.getConfiguration('GitVision').get('bundleMergedBranches');
+                    //const bundleBranches = vscode.workspace.getConfiguration('GitVision').get('bundleMergedBranches');
+                    const bundleBranches = false; // temporarily disabled
+                    //const showAllCommits = vscode.workspace.getConfiguration('GitVision').get('showAllCommits');
                     if (bundleBranches) {
                         const brothers = (await this.fileManager.getBrothers(item.key));
                         for (let item of Object.entries(brothers)) {

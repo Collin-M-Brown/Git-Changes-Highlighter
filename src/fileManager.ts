@@ -22,15 +22,10 @@ git diff <hash>..HEAD
 */
 
 import * as vscode from 'vscode';
-import { execSync } from 'child_process';
-//import { getWorkspacePath, ms.debugInfo } from './infoManager';
-//import { ms.debugLog, ms.DEBUG } from './infoManager';
 import simpleGit, { SimpleGit, DefaultLogFields, LogResult } from 'simple-git';
 import { GIT_REPO } from './extension';
 import { InfoManager as ms } from './infoManager';
-import { merge } from 'lodash';
 import PQueue from 'p-queue';
-
 const fs = require('fs');
 const path = require('path');
 
@@ -87,19 +82,6 @@ export class FileManager {
         }
     }
 
-    private async checkIgnore(filePath: string): Promise<boolean> {
-        try {
-            const result = await this.git.raw(['check-ignore', filePath]);
-            return result.trim() !== '';
-        } catch (err) {
-            if (err instanceof Error) {
-                if (err.message.includes('not ignored'))
-                    return false;
-            }
-            throw err;
-        }
-    }
-
     private setgitLogMap(log: LogResult<DefaultLogFields>): Map<string, DefaultLogFields> {
         try {
 
@@ -149,12 +131,18 @@ export class FileManager {
             let count = 0;
             for (let i = 0; i < log.all.length; i++) {
                 let l = log.all[i];
-                if (!mergeCommits.has(l.hash)) {
-                    l.message = `(${count++}): ${l.message}`;
+                if (mergeCommits.has(l.hash)) {
+                    if (ms.TEST_MERGED_COMMITS) {
+                        l.message = `${++count}) ${l.message}`;
+                        map.set(l.message, l);
+                        this.commitList[l.message] = l.date;
+                    }
+                    else
+                        mergesIgnored++;
+                } else if (!ms.TEST_MERGED_COMMITS){
+                    l.message = `${++count}) ${l.message}`;
                     map.set(l.message, l);
                     this.commitList[l.message] = l.date;
-                } else {
-                    mergesIgnored++;
                 }
             }
     
