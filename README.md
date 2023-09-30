@@ -8,7 +8,7 @@ This extension serves a similar purpose to a git heatmap but allows for tracking
 
 ![example image](images/gitVisionPreview.png)
 
-![button image](images/GV_Buttons.png)
+![button image](images/GV_Button.png)
 
 ![filter image](images/filter_example.png)
 
