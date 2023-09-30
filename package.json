@@ -72,8 +72,8 @@
                 }
             },
             {
-                "command": "GitVision.filterCommitRepository",
-                "title": "filterCommitRepository",
+                "command": "GitVision.openFilter",
+                "title": "openFilter",
                 "icon": {
                     "light": "./images/search-light.svg",
                     "dark": "./images/search-dark.svg"
@@ -206,7 +206,7 @@
                     "group": "navigation@2"
                 },
                 {
-                    "command": "GitVision.filterCommitRepository",
+                    "command": "GitVision.openFilter",
                     "when": "view == CommitRepo",
                     "group": "navigation"
                 },

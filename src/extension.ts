@@ -70,11 +70,13 @@ export async function activate(context: vscode.ExtensionContext) {
     commandProcessor.expandAll(context);
     
     //Display Tree in sidebar view
-    commandProcessor.updateTreeFiles(context);
+    commandProcessor.updateTreeFiles();
 
-    commandProcessor.filterCommitRepository(context);
+    commandProcessor.openFilter(context);
 
     commandProcessor.clearFilter(context);
+
+    commandProcessor.repoWatcher();
 }
 
 export function deactivate() { }
