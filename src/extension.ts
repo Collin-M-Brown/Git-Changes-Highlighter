@@ -35,7 +35,7 @@ export async function activate(context: vscode.ExtensionContext) {
     //Initialize Command Processor
     if (!commandProcessor)
         commandProcessor = await CommandProcessor.create(context);
-    context.subscriptions.push(vscode.commands.registerCommand('GitVision.openSettings', () => {
+        context.subscriptions.push(vscode.commands.registerCommand('GitVision.openSettings', () => {
         vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision');
     }));
     

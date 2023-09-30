@@ -128,7 +128,7 @@ export class CommandProcessor {
                 vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
                 exit(1);
             }
-        });
+        }); 
 
         context.subscriptions.push(disposable);
     }
@@ -318,7 +318,7 @@ export class CommandProcessor {
         });
         context.subscriptions.push(disposable);
     }
-
+    
     private isCommandRunning(): boolean {
         if (this.commandRunning) {
             ms.basicInfo(`A command is still running. Please wait for it to finish.`);
@@ -326,4 +326,6 @@ export class CommandProcessor {
         }
         return false;
     }
+
+
 }
