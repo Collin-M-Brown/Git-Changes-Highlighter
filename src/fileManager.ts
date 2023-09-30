@@ -26,18 +26,25 @@ import simpleGit, { SimpleGit, DefaultLogFields, LogResult } from 'simple-git';
 import { GIT_REPO } from './extension';
 import { InfoManager as ms } from './infoManager';
 import PQueue from 'p-queue';
+import { merge } from 'lodash';
 const fs = require('fs');
 const path = require('path');
 
 export class FileManager {
-    private git: SimpleGit;
+    private git: SimpleGit; //simple git api used to run git commits
+
+    //Set of promises for cached log data
     private gitLogPromise: Promise<LogResult<DefaultLogFields>>;
-    private gitLogMap: Map<string, DefaultLogFields>;
     private gitLsPromise: Promise<string>;
+    private gitBlameLogPromise: Promise<string>;
+    
+    private gitLogMap: Map<string, DefaultLogFields>;
     private gitLsFiles: Set<string> = new Set();
-    private gitHighlightData: { [file: string]: number[] };
-    private gitHighlightFiles: Set<string> = new Set();
-    private commitHashSet: Set<string> = new Set();
+
+    private gitHighlightData: { [file: string]: number[] }; //Map of file name to array of lines that should be highlighted
+    private gitHighlightFiles: Set<string> = new Set(); //Stores files with changes
+
+    private commitHashSet: Set<string> = new Set(); //Set of hashes parsed from watched commit list
     private commitList: { [key: string]: string } = {};
     private fileCounter: Map<string, number> = new Map();
     private headCommit: string = '';
@@ -46,6 +53,7 @@ export class FileManager {
         this.git = simpleGit(GIT_REPO);
         this.gitLogPromise = this.git.log();
         this.gitLsPromise = this.git.raw(['ls-files']);
+        this.gitBlameLogPromise = this.git.raw(['log','--pretty=format:%H-%P']); //log --pretty=format:%H-%P
         this.gitLogMap = new Map();
         this.gitHighlightData = {};
     }
@@ -58,91 +66,69 @@ export class FileManager {
 
     private async setUp() {
         this.headCommit = (await this.executeGitCommand(`rev-list --max-parents=0 HEAD`)).trim();
-        //this.headCommit = (await this.git.raw(['rev-list', '--max-parents=0', 'HEAD'])).trim();
-        const showAllCommits: boolean = vscode.workspace.getConfiguration('GitVision').get<boolean>('showAllCommits') || false;
-        if (!showAllCommits)
-            this.gitLogMap = await this.trimGitLogMap((await this.gitLogPromise));
-        else    
-            this.gitLogMap = this.setgitLogMap((await this.gitLogPromise));
+        this.gitLogMap = await this.setGitLogMap();
+
         this.gitLsFiles = new Set<string>((await this.gitLsPromise).split('\n'));
     }
     
 
     private async executeGitCommand(command: string): Promise<string> {
         try {
-            //const path = execSync(`cd ${GIT_REPO} ; git rev-parse --show-toplevel`).toString().trim();
             const outputString = (await this.git.raw(command.split(' '))).trim();
-            //console.log(`Command: ${command} \nOutput: ${outputString}`);
+            ms.debugLog(`running command ${command}`);
             return outputString;
         } catch (error) {
-            //vscode.window.showErrorMessage(`Error executing command: cd "${GIT_REPO}" && ${command}`);
             if (error instanceof Error)
                 ms.debugInfo(`${error.message}`);
             return "";
         }
     }
 
-    private setgitLogMap(log: LogResult<DefaultLogFields>): Map<string, DefaultLogFields> {
-        try {
+    private async findMergedCommits() {
+        const showAllCommits: boolean = vscode.workspace.getConfiguration('GitVision').get<boolean>('showAllCommits') || false;
+        if (showAllCommits)
+            return new Set<string>();
 
-            const map: Map<string, DefaultLogFields> = new Map();
-                for (let l of log.all) {
-                    map.set(l.message, l);
-                    this.commitList[l.message] = l.date;
-                    if (ms.DEBUG) {
-                        console.log(`Commit: ${l.hash}`);
-                        console.log(`Author Name: ${l.author_name}`);
-                        console.log(`Author Email: ${l.author_email}`);
-                        console.log(`Date: ${l.date}`);
-                        console.log(`Message: ${l.message}`);
-                        console.log(`Body: ${l.body}`);
-                        console.log(`Refs: ${l.refs}`);
-                        console.log("");
-                    }
-                }
-
-            const current: DefaultLogFields = {
-                hash: '0000000000000000000000000000000000000000',
-                date: '', message: '', author_email: '', author_name: '', refs: '', body: '', };
-            map.set('Uncommitted changes', current);
-            return map;
-        } catch (error) {
-            vscode.window.showErrorMessage(`Error getting git log`);
-            return new Map();
+        const gitBlameLog = await this.gitBlameLogPromise;
+        const commitsWithParents = gitBlameLog.split('\n');
+        const mergeCommits = new Set<string>();
+        for (const line of commitsWithParents) {
+            const fields = line.split('-');
+            const commitHash = fields[0];
+            const parents = fields[1].split(' '); 
+            if (parents.length > 1) {
+                mergeCommits.add(commitHash);
+            }
         }
+
+        return mergeCommits;
     }
 
-    private async trimGitLogMap(log: LogResult<DefaultLogFields>): Promise<Map<string, DefaultLogFields>> {
+    private async setGitLogMap(): Promise<Map<string, DefaultLogFields>> {
         try {
             const map: Map<string, DefaultLogFields> = new Map();
             let mergesIgnored = 0;
-            const gitLogOutput = await this.executeGitCommand('log --pretty=format:%H-%P');
-            const commitsWithParents = gitLogOutput.split('\n');
-            const mergeCommits = new Set<string>();
-            for (const line of commitsWithParents) {
-                const fields = line.split('-');
-                const commitHash = fields[0];
-                const parents = fields[1].split(' '); 
-                if (parents.length > 1) {
-                    mergeCommits.add(commitHash);
-                }
-            }
+            const mergeCommits = await this.findMergedCommits();
             
             let count = 0;
+            let logEntry: DefaultLogFields;
+            let addCommit = (): void => {
+                logEntry.message = `${++count}) ${logEntry.message}`;
+                map.set(logEntry.message, logEntry);
+                this.commitList[logEntry.message] = logEntry.date;
+            };
+
+            let log = await this.gitLogPromise;
             for (let i = 0; i < log.all.length; i++) {
-                let l = log.all[i];
-                if (mergeCommits.has(l.hash)) {
-                    if (ms.TEST_MERGED_COMMITS) {
-                        l.message = `${++count}) ${l.message}`;
-                        map.set(l.message, l);
-                        this.commitList[l.message] = l.date;
+                logEntry = log.all[i];
+                if (mergeCommits.has(logEntry.hash)) {
+                    if (ms.TEST_MERGED_COMMITS) { //only add merged commits (for testing purposes)
+                        addCommit();
                     }
                     else
                         mergesIgnored++;
-                } else if (!ms.TEST_MERGED_COMMITS){
-                    l.message = `${++count}) ${l.message}`;
-                    map.set(l.message, l);
-                    this.commitList[l.message] = l.date;
+                } else if (!ms.TEST_MERGED_COMMITS){ //The usual method for adding commits.
+                    addCommit();
                 }
             }
     
@@ -176,9 +162,6 @@ export class FileManager {
 
             ms.debugInfo(`res for hash ${hash} = ${res}`);
 
-            //if (res.length > 100)
-            //    return [];
-
             let changedFiles: string[] = [];
             for (let file of res) {
                 if (this.gitLsFiles.has(file)) {
@@ -186,8 +169,6 @@ export class FileManager {
                 }
                 else {
                     file = file.split("/").slice(-1)[0];
-                    //const newFile = (await this.executeGitCommand(`ls-files | grep ${file} || true`)).trim(); 
-                    //const matchedFiles = newFile.split('\n').filter(f => f.includes(file));
                     //TODO maybe use map to prevent repeat searches
                     //TODO: handle multiple files returned. For now, just do nothing as we can't really know if it was renamed.
                     //Also, this will cause an issue if two files have the same name but one is deleted. But should be fine as long as hash is not found.
@@ -333,8 +314,8 @@ export class FileManager {
         }
     }
 
-    async addCommits(commitList: { [key: string]: string }, progress: any): Promise<void> {
-        let temp: string[] = Object.keys(commitList);
+    async addCommits(watchedCommits: { [key: string]: string }, progress: any): Promise<void> {
+        let temp: string[] = Object.keys(watchedCommits);
         await this.fillHashAndFileSet(temp);
         await this.fillGitHighlightData(progress);
     }
