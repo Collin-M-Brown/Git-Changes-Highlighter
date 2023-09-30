@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import * as vscode from 'vscode';  
 import { exit } from 'process';
 import { FileManager } from './fileManager';
 import { fileTree } from './fileTree';
