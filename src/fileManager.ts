@@ -250,8 +250,13 @@ export class FileManager {
     //File should be in the form relative path
     async updateFileHighlights(file: string): Promise<number> {
         let count = 0;
+        const includeWhitespace = vscode.workspace.getConfiguration('GitVision').get('includeWhitespaceBlame');
         try {
-            const blameFile: string[] = (await this.executeGitCommand(`blame -l ${file}`)).split('\n');
+            let blameFile: string[];
+            if (includeWhitespace)
+                blameFile = (await this.executeGitCommand(`blame -l ${file}`)).split('\n');
+            else
+                blameFile = (await this.executeGitCommand(`blame -lw ${file}`)).split('\n');
             if (blameFile.length === 0)
                 return 0;
 

@@ -137,6 +137,12 @@
                         "type": "boolean",
                         "default": false,
                         "description": "Test parameter to check merged commits."
+                    },
+                    "GitVision.includeWhitespaceBlame": {
+                        "title": "Show whitespace changes",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Enable if you wish for whitespace changes to affect git blame."
                     }
                 }
             }
