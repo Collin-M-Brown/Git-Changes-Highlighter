@@ -30,7 +30,7 @@ A typical merged commit might look like this
 
 in this case (Hash A)'s changes mirror its sibling commit but its changes wont show up in blame.
 
-Therefore, merged commits will children will be added with their children. This option can be disabled in settings.
+Therefore, merged commits are ignored by default. If a merged commit resolves conflicts in a way unique to both branches, then the merge commit will have blame attributed to it. If you want to see your merged commits you can enable all commits in the settings. Just be aware that most of the merged commits will be empty.
 
 
 ## Requirements
@@ -39,24 +39,11 @@ vscode 1.82.2
 
 ## Extension Settings
 
-Enable Real time highlighting: (Allows for writing in between changes.)
-
-Highlight color:
-
-Bundle Merged Branches:
-
-Find Renamed Files: (disabled by default)
-
-Show Debug Info Messages: (Will show debug info popups when commands fail.)
+See settings tab
 
 ## Known Issues
 
-* The highlights attempt to adapt to any current changes you make. But there are some cases
-    where deleting and undoing changes can cause the highlights to be stack on top of each other. (only occurs when real time highlighting is enabled.)
 
-* Merged branches that did not have the commits squashed will not show any changes when added to commit list. You will need to add the commits for the branch individually. If the merged branch was squashed, this will not be an issue.
-
-* Tracking highlights and real time can cause flickering. I will add an option to enable or disable
   
 ## Release Notes
 
@@ -86,13 +73,36 @@ Add filter buttons and scroll bar highlights
 
 * Bug fixes and QOL adjustments
 
+### 1.2.0
+
+* Optimize file reading speed
+* Add mutex to block intensive commands from being run multiple times
+* Add watchers for filter string, showAllCommits setting, and branch changes
+* remove some features that were dated.
+
 ### TODO
 
 * Add feature to save last used commit watch list so people don't have to re-add the commits every time they reload.
 
-* Handle branch switch, auto reload commit repository an clear watch list.
+~~* Handle branch switch, auto reload commit repository an clear watch list.~~
 
 * Add color option for highlights that scales with date
+
+## Related extensions (inspirations)
+
+* GitLense
+* Git Blame
+* Bookmarks
+
+## Keywords
+git git git git git git git git git git git 
+git blame git blame git blame git blame git blame 
+git highlighter git highlighter git highlighter git highlighter git highlighter 
+source control source control source control source control source control source control 
+code review code review code review code review code review code review 
+feature branch highlighter feature branch highlighter feature branch highlighter
+
+
 ## For more information
 
 https://github.com/Collin-M-Brown/Git-Vision
