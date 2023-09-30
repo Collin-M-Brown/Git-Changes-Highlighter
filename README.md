@@ -6,11 +6,11 @@ For an example; if you have multiple commits for a single feature merged to the 
 
 This extension serves a similar purpose to a git heatmap but allows for tracking multiple commits at once.
 
-![example image](images/gitvisionexample.png)
+![example image](images/gitVisionPreview.png)
 
-![button image](images/buttons.png)
+![button image](images/GV_Buttons.png)
 
-![filter image](images/filterAndUpdates.png)
+![filter image](images/filter_example.png)
 
 ## Notes
 Notes on merged commits:
