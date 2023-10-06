@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as _ from 'lodash';
 import { InfoManager as ms } from './infoManager';
+import { Color } from './Color';
 
 /*
 Mayabe I should make a Commit class
@@ -63,15 +64,15 @@ export class HighlightProcessor {
             const lines =this.highlights[file] || [];
             //console.log(`applying highlights to: ${uri}`);
             //console.log(`Lines: ${lines}`);
-            const color = vscode.workspace.getConfiguration('GitVision').get('highlightColor');
+            let color: Color = new Color(vscode.workspace.getConfiguration('GitVision').get('highlightColor')??'rgba(34, 89, 178, 0.4)');
             //ms.debugLog(`Color: ${color}`);
 
             try {
                 this.decorationType.dispose(); 
                 this.decorationType = vscode.window.createTextEditorDecorationType({
-                    backgroundColor: color as string,
+                    backgroundColor: color.toString() as string,
                     isWholeLine: true,
-                    overviewRulerColor: `rgb(79, 190, 255)`,
+                    overviewRulerColor: color.toStringO(1),
                     overviewRulerLane: vscode.OverviewRulerLane.Full,
                     
                 });

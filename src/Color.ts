@@ -27,6 +27,6 @@ export class Color {
     }
 
     toStringO(opacity: number): string {
-        return `rgba(${this.r},${this.g},${this.b},${opacity})`;
+        return `rgba(${this.r*2},${this.g*2},${this.b*2},${opacity})`;
     }
 }
