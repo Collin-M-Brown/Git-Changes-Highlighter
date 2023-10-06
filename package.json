@@ -8,7 +8,7 @@
     "description": "Highlight git blame data for multiple commits at once. Like a selective heatmap",
     "icon": "./images/Git_vision_Logo.png",
     "publisher": "collin-m-brown",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "engines": {
         "vscode": "^1.81.0"
     },
@@ -116,8 +116,8 @@
                     },
                     "GitVision.highlightColor": {
                         "type": "string",
-                        "default": "#2259b27e",
-                        "description": "The color to use for highlights",
+                        "default": "rgba(34, 89, 1, 0.3)",
+                        "description": "RGB color value (Comma separated)",
                         "scope": "application"
                     },
                     "GitVision.filterString": {

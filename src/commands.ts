@@ -328,9 +328,18 @@ export class CommandProcessor {
                 });
             }
         });
-        fs.watch(GIT_REPO, {}, (event, filename) => {
-            if (event === 'change') {
-                ms.basicInfo(`Detected branch change. Reloading commits`);
+        // Watch the HEAD file for branch changes
+        fs.watch(path.join(`${GIT_REPO}/.git`, 'HEAD'), {}, (event, filename) => {
+            if (event === 'change') { 
+                console.log('Detected branch change');
+                this.recreate();
+            }
+        });
+
+        // Watch the refs/heads directory for new commits
+        fs.watch(path.join(`${GIT_REPO}/.git`, 'refs/heads'), {}, (event, filename) => {
+            if (event === 'change') { 
+                console.log('Detected new commit on branch', filename);
                 this.recreate();
             }
         });
