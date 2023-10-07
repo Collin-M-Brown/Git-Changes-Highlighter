@@ -33,7 +33,7 @@ export class HighlightProcessor {
         for (const fileName in newHighlights) {
             if (newHighlights.hasOwnProperty(fileName)) {
                 const lines = newHighlights[fileName];
-                // Clear existing highlights for this file
+                ms.debugLog(`loading highlights for ${fileName}: ${lines}`);
                 this.highlights[fileName] = [];
                 this.highlights[fileName].push(...lines);
             }
@@ -41,7 +41,7 @@ export class HighlightProcessor {
     }
 
     loadFile(fileName: string, lines:number[]) {
-        //console.log(`Loading file: ${fileName}`);
+        ms.debugLog(`Loading file: ${fileName}`);
         this.highlights[fileName] = lines;
     }
 
@@ -59,11 +59,11 @@ export class HighlightProcessor {
     applyHighlights(document: vscode.TextDocument) {
         const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
         if (editor) {
-            const file = document.fileName;
+            let file = document.fileName;
             
             const lines =this.highlights[file] || [];
-            //console.log(`applying highlights to: ${uri}`);
-            //console.log(`Lines: ${lines}`);
+            ms.debugLog(`applying highlights for ${file}`);
+            ms.debugLog(`Lines: ${lines}`);
             let color: Color = new Color(vscode.workspace.getConfiguration('GitVision').get('highlightColor')??'rgba(34, 89, 178, 0.4)');
             //ms.debugLog(`Color: ${color}`);
 
@@ -114,8 +114,6 @@ export class HighlightProcessor {
 
     fileWatcher() {
         vscode.workspace.onDidChangeTextDocument(e => {
-            if (!vscode.workspace.getConfiguration('GitVision').get('enableRealtimeHighlighting'))
-                return;
             const file = e.document.fileName;
             //console.log(`onDidChangeTextDocument ${file}`);
             if (!this.highlights[file]) { return; }

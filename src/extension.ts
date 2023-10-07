@@ -15,9 +15,10 @@ export let GIT_REPO: string;
 
 function getGitRepo(): boolean {
     try {
-        //console.log(`workspace path: ${ms.getWorkspacePath()}`);
+        ms.debugLog(`workspace path: ${ms.getWorkspacePath()}`);
         GIT_REPO = execSync(`cd ${ms.getWorkspacePath()} && git rev-parse --show-toplevel`).toString().trim();// maybe cd at start
-        //console.log(`git repo found : ${GIT_REPO}`);
+        GIT_REPO = GIT_REPO.replace(/C:/g, "c:");
+        ms.debugLog(`git repo found : ${GIT_REPO}`);
         return GIT_REPO.length !== 0;
     } catch (error) {
         return false;

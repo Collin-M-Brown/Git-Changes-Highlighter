@@ -8,7 +8,7 @@
     "description": "Highlight git blame data for multiple commits at once. Like a selective heatmap",
     "icon": "./images/Git_vision_Logo.png",
     "publisher": "collin-m-brown",
-    "version": "1.2.7",
+    "version": "1.2.9",
     "engines": {
         "vscode": "^1.81.0"
     },
@@ -99,11 +99,11 @@
                         "default": true,
                         "description": "Show Basic Info Popups && general notifications"
                     },
-                    "GitVision.showDebugInfoMessages": {
-                        "title": "Show Debugging Info Popups",
+                    "GitVision.debugLog": {
+                        "title": "Show debug log in output",
                         "type": "boolean",
                         "default": false,
-                        "description": "Show Debugging Info Popups"
+                        "description": "Show debug log in output"
                     },
                     "GitVision.findRenamedFiles": {
                         "title": "Find Renamed Files",

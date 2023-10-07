@@ -2,14 +2,19 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 
+const outputChannel = vscode.window.createOutputChannel("GitVision Logs");
 export class InfoManager {
     static STRESS_DEBUG = false;
-    static DEBUG = false;
+    static DEBUG = vscode.workspace.getConfiguration('GitVision').get('debugLog');
     static TEST_MERGED_COMMITS = vscode.workspace.getConfiguration('GitVision').get('testMergedOnly');
 
     static debugLog(message: string | undefined) {
-        if (this.DEBUG)
-            console.log(message);
+        if (this.DEBUG) {
+            if (message === undefined)
+                return;
+            outputChannel.appendLine(message);
+            outputChannel.show();
+        }
     }
 
     static basicInfo(message: string) {
@@ -18,15 +23,9 @@ export class InfoManager {
                 if (selection === "Disable Notifications") {
                     //vscode.workspace.getConfiguration('GitVision').update('showBasicInfoMessages', false, vscode.ConfigurationTarget.Global);
                     //vscode.workspace.getConfiguration('GitVision').update('showBasicInfoMessages', undefined, vscode.ConfigurationTarget.Workspace);
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision.show');
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision.showBasic');
                 }
             });
-        }
-    }
-
-    static debugInfo(message: string) {
-        if (vscode.workspace.getConfiguration('GitVision').get('showDebugInfoMessages')) {
-            vscode.window.showInformationMessage(`${message}`);
         }
     }
 

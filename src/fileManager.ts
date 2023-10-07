@@ -79,7 +79,7 @@ export class FileManager {
             return outputString;
         } catch (error) {
             if (error instanceof Error)
-                ms.debugInfo(`${error.message}`);
+                ms.debugLog(`${error.message}`);
             return "";
         }
     }
@@ -160,7 +160,7 @@ export class FileManager {
                     res = res.concat((await this.executeGitCommand(`diff ${hash}~..HEAD --find-renames=70% --name-only`)).split('\n').map(s => s.trim()).filter(Boolean));
             }
 
-            ms.debugInfo(`res for hash ${hash} = ${res}`);
+            ms.debugLog(`res for hash ${hash} = ${res}`);
 
             let changedFiles: string[] = [];
             for (let file of res) {
@@ -182,7 +182,7 @@ export class FileManager {
             }
 
             if (changedFiles.length === 0) {
-                ms.debugInfo(`Founds 0 files with changes for commit ${commit}`);
+                ms.debugLog(`Founds 0 files with changes for commit ${commit}`);
             }
             return changedFiles;
         } catch (error: unknown) {
@@ -219,18 +219,19 @@ export class FileManager {
         });
 
         const set = new Set<string>((await Promise.all(filePromises)).flat());
-        ms.debugInfo(`${set.size} potential files found.`);
+        ms.debugLog(`${set.size} potential files found.`);
+        ms.debugLog(``);
         for (const file of set) {
             if (fs.existsSync(path.join(GIT_REPO, file))) {
-                //ms.debugLog(`File exists: ${file}`);
+                ms.debugLog(`File exists: ${file}`);
                 this.gitHighlightFiles.add(file);
             }
             else {
-                ms.debugInfo(`could not find path to file ${path.join(GIT_REPO, file)}`);
+                ms.debugLog(`could not find path to file ${path.join(GIT_REPO, file)}`);
             }
         }
 
-        ms.debugInfo(`${this.gitHighlightFiles.size} files with changes found.`);
+        ms.debugLog(`${this.gitHighlightFiles.size} files with changes found.`);
         if (ms.DEBUG) {
             ms.debugLog(`==Files with changes==`);
             for (let file of this.gitHighlightFiles)
@@ -250,6 +251,7 @@ export class FileManager {
     //File should be in the form relative path
     async updateFileHighlights(file: string): Promise<number> {
         let count = 0;
+        ms.debugLog(`checking ${file} for blame`);
         const includeWhitespace = vscode.workspace.getConfiguration('GitVision').get('includeWhitespaceBlame');
         try {
             let blameFile: string[];
@@ -270,7 +272,7 @@ export class FileManager {
             }
         } catch (error) {
             console.error(`Error getting blame for file: ${file}`);
-            ms.debugInfo(`Error getting blame for file: ${file}`);
+            ms.debugLog(`Error getting blame for file: ${file}`);
             return 0;
         }
         return count;
@@ -293,12 +295,13 @@ export class FileManager {
                 ms.debugLog(`finding hash data for file: ${file}`);
                 file = path.join(GIT_REPO, file);
                 const count = await this.updateFileHighlights(file);
+                ms.debugLog(`${count} changes found in ${file}`);
                 if (count)
                     this.fileCounter.set(file, count);
                 if (ms.DEBUG) {
                     ms.debugLog(`==Highlights for ${file}==`);
                     ms.debugLog(`${this.gitHighlightData[file]}`);
-                    ms.debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(GIT_REPO, file)).toString()]}`);
+                    //ms.debugLog(`${this.gitHighlightData[vscode.Uri.file(path.join(GIT_REPO, file)).toString()]}`);
                     ms.debugLog(`========================`);
                 }
                 progress.report({ increment: progressIncrement});
@@ -327,6 +330,10 @@ export class FileManager {
 
     getGitHighlightData(): { [file: string]: number[] } {
         return this.gitHighlightData;
+    }
+
+    isFileWatched(file: string) {
+        return file in this.gitHighlightData;
     }
 
     getHighlightFiles(): Map<string, number> {

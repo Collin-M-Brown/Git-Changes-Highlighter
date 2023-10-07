@@ -19,7 +19,7 @@ export class CommandProcessor {
     private commitRepo: CommitListViewProvider;
     private commitViewDropdown: vscode.TreeView<{ [key: string]: string }>;
     private commitRepoDropdown: vscode.TreeView<{ [key: string]: string }>;
-    private fileWatcherStarted = false;
+    private watchForSaveStarted = false;
     private commitsOn: boolean = false;
     private lock = new Mutex();
 
@@ -44,11 +44,7 @@ export class CommandProcessor {
             commandProcessor.commitView.loadCommits(commandProcessor.fileManager.getCommitList());
         else
             commandProcessor.commitRepo.loadCommits(commandProcessor.fileManager.getCommitList());
-        vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
-            for (const editor of editors) {
-                commandProcessor.hp.applyHighlights(editor.document);
-            }
-        });
+
         return commandProcessor;
     }
 
@@ -84,17 +80,18 @@ export class CommandProcessor {
                 }, async (progress, token) => {
                     this.fileManager.clearHighlightData();
                     this.hp.clearAllHighlights();
-                    this.updateTreeFiles();
+                    this.updateTreeFiles(); //Bad practice, confusing because it uses fileManager object
                     await this.fileManager.addCommits(this.commitView.getCommits(), progress); //give commits to fileManager to parse
                     this.hp.loadHighlights(this.fileManager.getGitHighlightData()); //load data to be highlighted
                     const editor = vscode.window.activeTextEditor;
+                    ms.debugLog(`About to apply highlights...`);
                     if (editor) {
                         this.hp.applyHighlights(editor.document);
                     }
                     this.updateTreeFiles();
-                    if (!this.fileWatcherStarted) {
-                        this.fileWatcher();
-                        this.fileWatcherStarted = true;
+                    if (!this.watchForSaveStarted) {
+                        this.watchForSave();
+                        this.watchForSaveStarted = true;
                     }
                     this.commitsOn = true;
                 });
@@ -258,16 +255,17 @@ export class CommandProcessor {
     }
 
     fileExistsInRepo(filePath: string): boolean {
+        return false;
         const relativePath = path.relative(GIT_REPO, filePath);
         return !relativePath.startsWith('..') && fs.existsSync(filePath);
     }
 
-    fileWatcher() {
+    watchForSave() {
         vscode.workspace.onDidSaveTextDocument(async e => {
             if (this.commitsOn) {
                 try {
                     const fileName = e.fileName;
-                    if (!this.fileExistsInRepo(fileName))
+                    if (!(this.fileManager.isFileWatched(fileName)))
                         return;
                     if (!await this.fileManager.updateFileHighlights(fileName))
                         return;
@@ -327,6 +325,16 @@ export class CommandProcessor {
                     this.commitRepo.loadFilter(filter);
                     this.commitRepo.reload();
                 });
+            } else if (e.affectsConfiguration('GitVision.debugLog'))  {
+                ms.DEBUG = vscode.workspace.getConfiguration('GitVision').get('debugLog');
+            }
+        });
+        vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
+            for (const editor of editors) {
+                if (this.fileManager.isFileWatched(editor.document.fileName)) {
+                    ms.debugLog(`${editor.document.fileName} changed: updating highlights`);
+                    this.hp.applyHighlights(editor.document);
+                }
             }
         });
         chokidar.watch(path.join(`${GIT_REPO}/.git`, 'HEAD'), {ignoreInitial: true}).on('change', () => {
