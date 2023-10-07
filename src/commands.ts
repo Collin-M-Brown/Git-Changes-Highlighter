@@ -8,6 +8,7 @@ import { GIT_REPO } from './extension';
 import * as fs from 'fs';
 import * as path from 'path';
 import { InfoManager as ms, Mutex } from './infoManager';
+import * as chokidar from 'chokidar';
 
 
 export class CommandProcessor {
@@ -328,20 +329,15 @@ export class CommandProcessor {
                 });
             }
         });
-        // Watch the HEAD file for branch changes
-        fs.watch(path.join(`${GIT_REPO}/.git`, 'HEAD'), {}, (event, filename) => {
-            if (event === 'change') { 
-                console.log('Detected branch change');
-                this.recreate();
-            }
+        chokidar.watch(path.join(`${GIT_REPO}/.git`, 'HEAD'), {ignoreInitial: true}).on('change', () => {
+            ms.basicInfo(`Detected branch change. Reloading commits`);
+            this.recreate();
         });
-
+        
         // Watch the refs/heads directory for new commits
-        fs.watch(path.join(`${GIT_REPO}/.git`, 'refs/heads'), {}, (event, filename) => {
-            if (event === 'change') { 
-                console.log('Detected new commit on branch', filename);
-                this.recreate();
-            }
+        chokidar.watch(path.join(`${GIT_REPO}/.git`, 'refs/heads'), {ignoreInitial: true}).on('change', () => {
+            ms.basicInfo(`Detected branch change. Reloading commits`);
+            this.recreate();
         });
     }
 }
