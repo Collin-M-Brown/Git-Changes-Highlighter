@@ -18,7 +18,7 @@ export class InfoManager {
                 if (selection === "Disable Notifications") {
                     //vscode.workspace.getConfiguration('GitVision').update('showBasicInfoMessages', false, vscode.ConfigurationTarget.Global);
                     //vscode.workspace.getConfiguration('GitVision').update('showBasicInfoMessages', undefined, vscode.ConfigurationTarget.Workspace);
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision: info');
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision.show');
                 }
             });
         }

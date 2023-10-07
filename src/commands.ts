@@ -290,7 +290,7 @@ export class CommandProcessor {
 
                 if (filterString)
                     filter = filterString.toString().toLowerCase();
-                vscode.commands.executeCommand('workbench.action.openSettings', 'Git Vision: Filter String');
+                vscode.commands.executeCommand('workbench.action.openSettings', 'GitVision.filterString');
                 
 
                 this.commitRepo.loadFilter(filter);
