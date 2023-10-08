@@ -112,33 +112,35 @@ export class FileManager {
             
             let count = 0;
             let logEntry: DefaultLogFields;
-            let addCommit = (): void => {
+            let addCommit = (logEntry: DefaultLogFields): void => {
                 logEntry.message = `${++count}) ${logEntry.message}`;
                 map.set(logEntry.message, logEntry);
                 this.commitList[logEntry.message] = logEntry.date;
             };
+
+            const current: DefaultLogFields = {
+                hash: '0000000000000000000000000000000000000000',
+                date: '', message: 'Uncommitted changes', author_email: '', author_name: '', refs: '', body: '',
+            };
+            current.date = new Date().toDateString();
+            addCommit(current);
+            map.set('Uncommitted changes', current);
 
             let log = await this.gitLogPromise;
             for (let i = 0; i < log.all.length; i++) {
                 logEntry = log.all[i];
                 if (mergeCommits.has(logEntry.hash)) {
                     if (ms.TEST_MERGED_COMMITS) { //only add merged commits (for testing purposes)
-                        addCommit();
+                        addCommit(logEntry);
                     }
                     else
                         mergesIgnored++;
                 } else if (!ms.TEST_MERGED_COMMITS){ //The usual method for adding commits.
-                    addCommit();
+                    addCommit(logEntry);
                 }
             }
     
             ms.basicInfo(`${mergesIgnored} merge commits removed from commit repo (Disable this through settings).`);
-    
-            const current: DefaultLogFields = {
-                hash: '0000000000000000000000000000000000000000',
-                date: '', message: '', author_email: '', author_name: '', refs: '', body: '',
-            };
-            map.set('Uncommitted changes', current);
             return map;
         } catch (error) {
             vscode.window.showErrorMessage(`Error getting git log`);
