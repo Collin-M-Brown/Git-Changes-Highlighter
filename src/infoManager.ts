@@ -13,7 +13,7 @@ export class InfoManager {
             if (message === undefined)
                 return;
             outputChannel.appendLine(message);
-            outputChannel.show();
+            //outputChannel.show(true);
         }
     }
 

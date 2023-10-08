@@ -7,6 +7,8 @@ extension.ts->commands.ts -> commitView.ts/fileTree.ts
 import * as vscode from 'vscode';
 import { CommandProcessor } from './commands';
 import { execSync } from 'child_process';
+import * as os from 'os';
+
 
 import { InfoManager as ms } from './infoManager';
 
@@ -17,7 +19,10 @@ function getGitRepo(): boolean {
     try {
         ms.debugLog(`workspace path: ${ms.getWorkspacePath()}`);
         GIT_REPO = execSync(`cd ${ms.getWorkspacePath()} && git rev-parse --show-toplevel`).toString().trim();// maybe cd at start
-        GIT_REPO = GIT_REPO.replace(/C:/g, "c:");
+        if (os.platform() === 'win32') {
+            GIT_REPO = GIT_REPO.toLocaleLowerCase();
+        }
+        
         ms.debugLog(`git repo found : ${GIT_REPO}`);
         return GIT_REPO.length !== 0;
     } catch (error) {
