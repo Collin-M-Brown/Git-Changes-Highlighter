@@ -8,7 +8,7 @@
     "description": "Highlight git blame data for multiple commits at once. Like a selective heatmap",
     "icon": "./images/Git_vision_Logo.png",
     "publisher": "collin-m-brown",
-    "version": "1.2.9",
+    "version": "1.3.1",
     "engines": {
         "vscode": "^1.81.0"
     },
@@ -86,7 +86,11 @@
             },
             {
                 "command": "GitVision.openSettings",
-                "title": "GV settings"
+                "title": "GV settings",
+                "icon": {
+                    "light": "./images/gear_light.svg",
+                    "dark": "./images/gear_dark.svg"
+                }
             }
         ],
         "configuration": [
@@ -196,7 +200,7 @@
                 {
                     "command": "GitVision.openSettings",
                     "when": "view == CommitView || view == CommitRepo || view == gitHighlightsView",
-                    "group": "1_navigation"
+                    "group": "navigation@4"
                 },
                 {
                     "command": "GitVision.clearAll",
