@@ -226,7 +226,7 @@ export class CommandProcessor {
                 if (e.selection.length > 0) {
                     if (!found) {
                         const item = e.selection[0] as { key: string, value: string };;
-                        //debugLog(`You clicked on commit: ${item.key}`);
+                        ms.debugLog(`You clicked on commit: ${item.key}`);
                         commits = this.commitView.getCommits();
                         delete commits[item.key];
                         this.commitRepo.addCommit(item);
@@ -308,7 +308,9 @@ export class CommandProcessor {
     }
     
     repoWatcher() {
+
         vscode.workspace.onDidChangeConfiguration(e => {
+
             if (e.affectsConfiguration('GitVision.showAllCommits')) {
                 this.lock.queue(async() => {
                     this.recreate();
@@ -329,6 +331,7 @@ export class CommandProcessor {
                 ms.DEBUG = vscode.workspace.getConfiguration('GitVision').get('debugLog');
             }
         });
+
         vscode.window.onDidChangeVisibleTextEditors((editors: any) => {
             for (const editor of editors) {
                 if (this.fileManager.isFileWatched(editor.document.fileName)) {
@@ -337,6 +340,7 @@ export class CommandProcessor {
                 }
             }
         });
+        
         chokidar.watch(path.join(`${GIT_REPO}/.git`, 'HEAD'), {ignoreInitial: true}).on('change', () => {
             ms.basicInfo(`Detected branch change. Reloading commits`);
             this.recreate();
