@@ -122,7 +122,9 @@ export class FileManager {
                 hash: '0000000000000000000000000000000000000000',
                 date: '', message: 'Uncommitted changes', author_email: '', author_name: '', refs: '', body: '',
             };
-            current.date = new Date().toDateString();
+            let tempDate = new Date();
+            tempDate.setFullYear(9999);
+            current.date = tempDate.toDateString();
             addCommit(current);
             map.set('Uncommitted changes', current);
 
