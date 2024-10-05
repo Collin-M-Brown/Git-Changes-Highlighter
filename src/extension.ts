@@ -83,6 +83,11 @@ export async function activate(context: vscode.ExtensionContext) {
     commandProcessor.clearFilter(context);
 
     commandProcessor.repoWatcher();
+
+    commandProcessor.registerJumpCommands(context);
+
+    // trigger highlight from list command at start
+    await vscode.commands.executeCommand('GitVision.highlightCommits');
 }
 
 export function deactivate() { }

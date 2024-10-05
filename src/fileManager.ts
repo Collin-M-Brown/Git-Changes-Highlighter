@@ -31,8 +31,8 @@ const fs = require('fs');
 const path = require('path');
 
 export class FileManager {
+    
     private git: SimpleGit; //simple git api used to run git commits
-
     //Set of promises for cached log data
     private gitLogPromise: Promise<LogResult<DefaultLogFields>>;
     private gitLsPromise: Promise<string>;
@@ -49,6 +49,8 @@ export class FileManager {
     private fileCounter: Map<string, number> = new Map();
     private headCommit: string = '';
 
+    private alwaysShowUncommittedChanges: boolean;
+
     private constructor() {
         this.git = simpleGit(GIT_REPO);
         this.gitLogPromise = this.git.log();
@@ -56,8 +58,31 @@ export class FileManager {
         this.gitBlameLogPromise = this.git.raw(['log','--pretty=format:%H-%P']); //log --pretty=format:%H-%P
         this.gitLogMap = new Map();
         this.gitHighlightData = {};
+        this.alwaysShowUncommittedChanges = vscode.workspace.getConfiguration('GitVision').get('alwaysShowUncommittedChanges') || false;
+        vscode.workspace.onDidSaveTextDocument(this.handleFileSave.bind(this));
+        vscode.workspace.onDidChangeConfiguration(this.handleConfigChange.bind(this));
+        ms.debugLog(`alwaysShowUncommittedChanges initialized to: ${this.alwaysShowUncommittedChanges}`);
     }
 
+    // private async handleConfigChange(e: vscode.ConfigurationChangeEvent) {
+    //     if (e.affectsConfiguration('GitVision.alwaysShowUncommittedChanges')) {
+    //         this.alwaysShowUncommittedChanges = vscode.workspace.getConfiguration('GitVision').get('alwaysShowUncommittedChanges') || false;
+    //         if (this.alwaysShowUncommittedChanges) {
+    //             await this.addUncommittedChanges();
+    //         }
+    //     }
+    // }
+
+    // private async addUncommittedChanges() {
+    //     ms.debugLog('Attempting to add uncommitted changes');
+    //     const uncommittedChangesCommit = {
+    //         key: 'Uncommitted changes',
+    //         value: new Date().toISOString()
+    //     };
+    //     await this.addCommits({ [uncommittedChangesCommit.key]: uncommittedChangesCommit.value }, { report: () => {} });
+    //     ms.debugLog('Finished adding uncommitted changes');
+    // }
+    
     static async create() {
         const fileManager = new FileManager();
         await fileManager.setUp();
@@ -217,6 +242,7 @@ export class FileManager {
             const hash = this.gitLogMap.get(commit)?.hash;
             if (hash) {
                 this.commitHashSet.add(hash);
+                ms.debugLog(`Processing commit: ${commit}, hash: ${hash}`);
                 return this.getChangedFiles(`${hash}`, commit);
             }
             return Promise.resolve([]);
@@ -328,6 +354,13 @@ export class FileManager {
 
     async addCommits(watchedCommits: { [key: string]: string }, progress: any): Promise<void> {
         let temp: string[] = Object.keys(watchedCommits);
+        ms.debugLog(`Adding commits: ${temp.join(', ')}`);
+        ms.debugLog(`alwaysShowUncommittedChanges: ${this.alwaysShowUncommittedChanges}`);
+        if (this.alwaysShowUncommittedChanges && !temp.includes('Uncommitted changes')) {
+            temp.push('Uncommitted changes');
+            ms.debugLog('Added Uncommitted changes to the commit list');
+        }
+        ms.debugLog(`Final commit list: ${temp.join(', ')}`);
         await this.fillHashAndFileSet(temp);
         await this.fillGitHighlightData(progress);
     }
@@ -386,5 +419,46 @@ export class FileManager {
             this.siblingMessageShown = true;
         }
         return res;
+    }
+
+    private async handleConfigChange(e: vscode.ConfigurationChangeEvent) {
+        if (e.affectsConfiguration('GitVision.alwaysShowUncommittedChanges')) {
+            this.alwaysShowUncommittedChanges = vscode.workspace.getConfiguration('GitVision').get('alwaysShowUncommittedChanges') || false;
+            if (this.alwaysShowUncommittedChanges) {
+                await this.simulateUncommittedChangesSelection();
+            }
+        }
+    }
+
+    private async simulateUncommittedChangesSelection() {
+        const uncommittedChangesCommit = {
+            key: 'Uncommitted changes',
+            value: new Date().toISOString()
+        };
+        await this.addCommits({ [uncommittedChangesCommit.key]: uncommittedChangesCommit.value }, { report: () => {} });
+    }
+
+    private async handleFileSave(document: vscode.TextDocument) {
+        const filePath = document.fileName;
+        const relativePath = path.relative(GIT_REPO, filePath);
+        
+        if (!relativePath.startsWith('..') && this.gitLsFiles.has(relativePath)) {
+            const hasChanges = await this.checkFileForChanges(relativePath);
+            if (hasChanges && (this.alwaysShowUncommittedChanges || this.gitHighlightFiles.has(filePath))) {
+                this.gitHighlightFiles.add(filePath);
+                await this.updateFileHighlights(filePath);
+                this.fileCounter.set(filePath, this.gitHighlightData[filePath]?.length || 0);
+                this.notifyHighlightsChanged();
+            }
+        }
+    }
+
+    private async checkFileForChanges(relativePath: string): Promise<boolean> {
+        const output = await this.executeGitCommand(`diff --name-only ${relativePath}`);
+        return output.trim() !== '';
+    }
+
+    private notifyHighlightsChanged() {
+        vscode.commands.executeCommand('GitVision.refreshHighlights');
     }
 }

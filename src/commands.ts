@@ -71,7 +71,6 @@ export class CommandProcessor {
 
     highlightCommits(context: vscode.ExtensionContext) {
         let disposable = vscode.commands.registerCommand('GitVision.highlightCommits', async () => {
-    
             this.lock.dispatch(() => {
                 return vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
@@ -104,22 +103,30 @@ export class CommandProcessor {
 
     highlightCurrent(context: vscode.ExtensionContext) {
         return; //Disabled for now
-        let disposable = vscode.commands.registerCommand('GitVision.highlightUncommitedChanges', async () => {
-            try {
-                //debugLog("Running command: GitVision.highlightUncommitedChanges");
-                //await this.fileManager.addCommits(["Uncommitted changes"]); TODOFIX
-                this.hp.loadHighlights(this.fileManager.getGitHighlightData());
-                for (const editor of vscode.window.visibleTextEditors) {
-                    this.hp.applyHighlights(editor.document);
-                }
-                this.updateTreeFiles();
-            } catch (error) {
-                vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
-                exit(1);
-            }
-        });
+        // let disposable = vscode.commands.registerCommand('GitVision.highlightUncommitedChanges', async () => {
+        //     try {
+        //         //debugLog("Running command: GitVision.highlightUncommitedChanges");
+                
+        //         this.lock.dispatch(() => {
+        //             return vscode.window.withProgress({
+        //                 location: vscode.ProgressLocation.Notification,
+        //                 title: "Processing commit list",
+        //                 cancellable: false
+        //             }, async (progress, token) => {
+        //             // await this.fileManager.addCommits(["Uncommitted changes"], progress); 
+        //             this.hp.loadHighlights(this.fileManager.getGitHighlightData());
+        //             for (const editor of vscode.window.visibleTextEditors) {
+        //                 this.hp.applyHighlights(editor.document);
+        //             }
+        //             this.updateTreeFiles();
+        //         }
+        //     } catch (error) {
+        //         vscode.window.showErrorMessage("diff-highlighter failed to run. Please check the console for more information.");
+        //         exit(1);
+        //     }
+        // });
 
-        context.subscriptions.push(disposable);
+        // context.subscriptions.push(disposable);
     }
 
     highlightBranch(context: vscode.ExtensionContext) {
@@ -308,9 +315,7 @@ export class CommandProcessor {
     }
     
     repoWatcher() {
-
         vscode.workspace.onDidChangeConfiguration(e => {
-
             if (e.affectsConfiguration('GitVision.showAllCommits')) {
                 this.lock.queue(async() => {
                     this.recreate();
@@ -352,4 +357,18 @@ export class CommandProcessor {
             this.recreate();
         });
     }
+
+    public registerJumpCommands(context: vscode.ExtensionContext) {
+        context.subscriptions.push(
+          vscode.commands.registerCommand('GitVision.jumpToNextChange', () => {
+            this.hp.jumpToNextChange();
+          })
+        );
+    
+        context.subscriptions.push(
+          vscode.commands.registerCommand('GitVision.jumpToPrevChange', () => {
+            this.hp.jumpToPrevChange();
+          })
+        );
+      }
 }
