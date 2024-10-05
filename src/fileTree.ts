@@ -93,7 +93,7 @@ export class fileTree implements vscode.TreeDataProvider<FileTreeItem> {
 
     getChildren(element?: FileTreeItem): Thenable<FileTreeItem[]> {
         if (element) {
-            return Promise.resolve(Object.values(element.children || {}));
+            return Promise.resolve(Object.values(element.children || {}).sort((a, b) => a.label.localeCompare(b.label)));
         } else {
             return Promise.resolve(this.fileTree ? [this.fileTree] : []);
         }

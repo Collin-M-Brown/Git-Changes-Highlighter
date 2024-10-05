@@ -218,7 +218,7 @@ export class HighlightProcessor {
 
     private regenerateAllChangeBlocks() {
         this.allChangeBlocks = [];
-        const files = Object.keys(this.highlights).sort();
+        const files = Object.keys(this.highlights).sort((a, b) => a.localeCompare(b));
         for (const file of files) {
             const blocks = this.getHighlightBlocks(this.highlights[file]);
             for (const block of blocks) {
