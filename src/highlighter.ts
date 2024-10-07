@@ -81,10 +81,27 @@ export class HighlightProcessor {
     applyHighlights(document: vscode.TextDocument) {
         const editor = vscode.window.visibleTextEditors.find(e => e.document === document);
         if (editor) {
-            const file = document.fileName;
-            const lines = this.highlights[file] || [];
-            ms.debugLog(`Applying highlights for ${file}`);
-            ms.debugLog(`Lines: ${lines}`);
+            let file = document.fileName;
+            let lines: number[] = [];
+    
+            if (process.platform === 'win32') {
+                // Normalize the path to use forward slashes
+                file = file.replace(/\\/g, '/');
+                const lowerFile = file.toLowerCase();
+                const matchingKey = Object.keys(this.highlights).find(key => 
+                    key.toLowerCase().replace(/\\/g, '/') === lowerFile
+                );
+                if (matchingKey) {
+                    lines = this.highlights[matchingKey];
+                    ms.debugLog(`File path: ${file}`);
+                    ms.debugLog(`Matching key found: ${matchingKey}`);
+                    ms.debugLog(`Number of lines to highlight: ${lines.length}`);
+                    ms.debugLog(`Decoration type: ${JSON.stringify(this.decorationType)}`);
+                }
+            } else {
+                lines = this.highlights[file] || [];
+            }
+
 
             // Retrieve highlight color from configuration with proper typing
             const highlightColor = vscode.workspace.getConfiguration('GitVision').get<string>('highlightColor') ?? 'rgba(34, 89, 178, 0.4)';
@@ -150,6 +167,7 @@ export class HighlightProcessor {
      * Clears all highlights from all files.
      */
     clearAllHighlights() {
+        ms.debugLog('Clearing all highlights');
         this.highlights = {};
         const editors = vscode.window.visibleTextEditors;
         for (const editor of editors) {
@@ -291,6 +309,7 @@ export class HighlightProcessor {
             const position = new vscode.Position(line, 0);
             editor.selection = new vscode.Selection(position, position);
             editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+            this.applyHighlights(document);
             ms.debugLog(`Navigated to ${file} at line ${line}`);
         } catch (error) {
             console.error(`Failed to open file ${file} at line ${line}:`, error);

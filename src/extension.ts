@@ -20,6 +20,7 @@ function getGitRepo(): boolean {
         ms.debugLog(`workspace path: ${ms.getWorkspacePath()}`);
         GIT_REPO = execSync(`cd ${ms.getWorkspacePath()} && git rev-parse --show-toplevel`).toString().trim();// maybe cd at start
         if (os.platform() === 'win32') {
+            ms.debugLog(`windows detected`);
             GIT_REPO = GIT_REPO.toLocaleLowerCase();
         }
         
