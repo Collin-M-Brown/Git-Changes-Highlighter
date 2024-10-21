@@ -17,7 +17,6 @@ export class HighlightProcessor {
     private decorationType: vscode.TextEditorDecorationType;
     private throttledApplyHighlights = _.throttle(this.applyHighlights.bind(this), 300, { leading: false });
 
-    // Tracking the current file and position for navigation
     private currentFile: string | undefined;
     private allChangeBlocks: { file: string, block: { start: number, end: number } }[] = [];
     private currentBlockIndex: number = -1;
@@ -29,7 +28,6 @@ export class HighlightProcessor {
             isWholeLine: true,
         });
 
-        // Initialize file watcher if realtime highlighting is enabled
         const realtimeHighlighting = vscode.workspace.getConfiguration('GitVision').get<boolean>('realtimeHighlighting');
         if (realtimeHighlighting) {
             this.fileWatcher();
@@ -45,7 +43,7 @@ export class HighlightProcessor {
             if (newHighlights.hasOwnProperty(fileName)) {
                 const lines = newHighlights[fileName];
                 ms.debugLog(`Loading highlights for ${fileName}: ${lines}`);
-                this.highlights[fileName] = [...lines].sort((a, b) => a - b); // Ensure lines are sorted
+                this.highlights[fileName] = [...lines].sort((a, b) => a - b);
             }
         }
         this.regenerateAllChangeBlocks();
@@ -58,7 +56,7 @@ export class HighlightProcessor {
      */
     loadFile(fileName: string, lines: number[]) {
         ms.debugLog(`Loading file: ${fileName}`);
-        this.highlights[fileName] = [...lines].sort((a, b) => a - b); // Ensure lines are sorted
+        this.highlights[fileName] = [...lines].sort((a, b) => a - b);
         this.regenerateAllChangeBlocks();
     }
 
@@ -185,7 +183,6 @@ export class HighlightProcessor {
             const file = e.document.fileName;
             if (!this.highlights[file]) { return; }
 
-            // Sort the lines to ensure binary search works correctly
             this.highlights[file].sort((a, b) => a - b);
 
             for (const change of e.contentChanges) {
@@ -243,10 +240,20 @@ export class HighlightProcessor {
                 this.allChangeBlocks.push({ file, block });
             }
         }
-        // Sort blocks by file name, then by start line
         this.allChangeBlocks.sort((a, b) => 
             a.file.localeCompare(b.file) || a.block.start - b.block.start
         );
+    }
+
+    private getCurrentPosition(): { file: string, line: number } | undefined {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            return {
+                file: editor.document.fileName,
+                line: editor.selection.active.line
+            };
+        }
+        return undefined;
     }
 
     jumpToNextChange() {
@@ -259,8 +266,23 @@ export class HighlightProcessor {
             return;
         }
 
-        this.currentBlockIndex = (this.currentBlockIndex + 1) % this.allChangeBlocks.length;
-        const nextChange = this.allChangeBlocks[this.currentBlockIndex];
+        const currentPosition = this.getCurrentPosition();
+        if (!currentPosition) {
+            vscode.window.showInformationMessage('No active text editor.');
+            return;
+        }
+
+        let nextChangeIndex = this.allChangeBlocks.findIndex(change => 
+            change.file.localeCompare(currentPosition.file) > 0 || 
+            (change.file === currentPosition.file && change.block.start > currentPosition.line)
+        );
+
+        if (nextChangeIndex === -1) {
+            nextChangeIndex = 0;
+        }
+
+        const nextChange = this.allChangeBlocks[nextChangeIndex];
+        this.currentBlockIndex = nextChangeIndex;
         this.openFileAndJumpToLine(nextChange.file, nextChange.block.start);
     }
 
@@ -274,8 +296,25 @@ export class HighlightProcessor {
             return;
         }
 
-        this.currentBlockIndex = (this.currentBlockIndex - 1 + this.allChangeBlocks.length) % this.allChangeBlocks.length;
-        const prevChange = this.allChangeBlocks[this.currentBlockIndex];
+        const currentPosition = this.getCurrentPosition();
+        if (!currentPosition) {
+            vscode.window.showInformationMessage('No active text editor.');
+            return;
+        }
+
+        let prevChangeIndex = this.allChangeBlocks.findIndex(change => 
+            change.file.localeCompare(currentPosition.file) >= 0 && 
+            change.block.start >= currentPosition.line
+        );
+
+        if (prevChangeIndex <= 0) {
+            prevChangeIndex = this.allChangeBlocks.length - 1;
+        } else {
+            prevChangeIndex--;
+        }
+
+        const prevChange = this.allChangeBlocks[prevChangeIndex];
+        this.currentBlockIndex = prevChangeIndex;
         this.openFileAndJumpToLine(prevChange.file, prevChange.block.start);
     }
 
