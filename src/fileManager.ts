@@ -27,6 +27,8 @@ import { GIT_REPO } from './extension';
 import { InfoManager as ms } from './infoManager';
 import PQueue from 'p-queue';
 import { merge } from 'lodash';
+import * as micromatch from 'micromatch';
+
 const fs = require('fs');
 const path = require('path');
 
@@ -50,6 +52,8 @@ export class FileManager {
     private headCommit: string = '';
 
     private alwaysShowUncommittedChanges: boolean;
+    
+    private ignorePatterns: string[] = [];
 
     private constructor() {
         this.git = simpleGit(GIT_REPO);
@@ -59,30 +63,30 @@ export class FileManager {
         this.gitLogMap = new Map();
         this.gitHighlightData = {};
         this.alwaysShowUncommittedChanges = vscode.workspace.getConfiguration('GitVision').get('alwaysShowUncommittedChanges') || false;
+        this.loadIgnorePatterns();
+
         vscode.workspace.onDidSaveTextDocument(this.handleFileSave.bind(this));
         vscode.workspace.onDidChangeConfiguration(this.handleConfigChange.bind(this));
         ms.debugLog(`alwaysShowUncommittedChanges initialized to: ${this.alwaysShowUncommittedChanges}`);
     }
-
-    // private async handleConfigChange(e: vscode.ConfigurationChangeEvent) {
-    //     if (e.affectsConfiguration('GitVision.alwaysShowUncommittedChanges')) {
-    //         this.alwaysShowUncommittedChanges = vscode.workspace.getConfiguration('GitVision').get('alwaysShowUncommittedChanges') || false;
-    //         if (this.alwaysShowUncommittedChanges) {
-    //             await this.addUncommittedChanges();
-    //         }
-    //     }
-    // }
-
-    // private async addUncommittedChanges() {
-    //     ms.debugLog('Attempting to add uncommitted changes');
-    //     const uncommittedChangesCommit = {
-    //         key: 'Uncommitted changes',
-    //         value: new Date().toISOString()
-    //     };
-    //     await this.addCommits({ [uncommittedChangesCommit.key]: uncommittedChangesCommit.value }, { report: () => {} });
-    //     ms.debugLog('Finished adding uncommitted changes');
-    // }
     
+    private loadIgnorePatterns() {
+        this.ignorePatterns = vscode.workspace.getConfiguration('GitVision')
+            .get<string[]>('ignorePatterns') || [];
+        ms.debugLog(`Loaded ignore patterns: ${this.ignorePatterns.join(', ')}`);
+    }
+
+    private shouldIgnoreFile(filePath: string): boolean {
+        const normalizedPath = filePath.replace(/\\/g, '/');
+        for (const pattern of this.ignorePatterns) {
+            if (micromatch.isMatch(normalizedPath, pattern)) {
+                ms.debugLog(`File ${normalizedPath} matches ignore pattern ${pattern}`);
+                return true;
+            }
+        }
+        return false;
+    }
+
     static async create() {
         const fileManager = new FileManager();
         await fileManager.setUp();
@@ -224,53 +228,42 @@ export class FileManager {
         }
     }
 
-    //input is a list of commit messages
+    
     private async fillHashAndFileSet(commitList: string[]) {
-
         if (this.gitLogMap.size === 0) {
-            //ms.debugLog(`No git log found. Please check that you are in a git repository.`);
             vscode.window.showErrorMessage(`No git log found.`);
-        }
-
-        if (false) {
-            this.gitLogMap.forEach((value, key) => {
-                if (key in commitList) { ms.debugLog(`Key: ${key}, Value: ${value.hash}`); }
-            });
         }
 
         const filePromises = commitList.map(commit => {
             const hash = this.gitLogMap.get(commit)?.hash;
             if (hash) {
                 this.commitHashSet.add(hash);
-                ms.debugLog(`Processing commit: ${commit}, hash: ${hash}`);
                 return this.getChangedFiles(`${hash}`, commit);
             }
             return Promise.resolve([]);
         });
 
-        const set = new Set<string>((await Promise.all(filePromises)).flat());
-        ms.debugLog(`${set.size} potential files found.`);
-        ms.debugLog(``);
-        for (const file of set) {
-            if (fs.existsSync(path.join(GIT_REPO, file))) {
-                ms.debugLog(`File exists: ${file}`);
+        const allFiles = new Set<string>((await Promise.all(filePromises)).flat());
+        ms.debugLog(`${allFiles.size} potential files found before filtering.`);
+
+        for (const file of allFiles) {
+            if (!this.shouldIgnoreFile(file) && fs.existsSync(path.join(GIT_REPO, file))) {
+                ms.debugLog(`File exists and not ignored: ${file}`);
                 this.gitHighlightFiles.add(file);
-            }
-            else {
-                ms.debugLog(`could not find path to file ${path.join(GIT_REPO, file)}`);
+            } else {
+                ms.debugLog(`File ignored or not found: ${file}`);
             }
         }
 
-        ms.debugLog(`${this.gitHighlightFiles.size} files with changes found.`);
-        if (ms.DEBUG) {
-            ms.debugLog(`==Files with changes==`);
-            for (let file of this.gitHighlightFiles)
-                ms.debugLog(`${file}`);
-            ms.debugLog(`======================`);
-        }
+        ms.debugLog(`${this.gitHighlightFiles.size} files with changes found after filtering.`);
 
         if (this.gitHighlightFiles.size > 100) {
-            let confirmation = await vscode.window.showInformationMessage(`Detected a large number of changes: ${this.gitHighlightFiles.size} files found with changes. Are you sure you wish to process them?`, { modal: true }, 'Yes', 'No');
+            let confirmation = await vscode.window.showInformationMessage(
+                `Detected a large number of changes: ${this.gitHighlightFiles.size} files found with changes. Are you sure you wish to process them?`,
+                { modal: true },
+                'Yes',
+                'No'
+            );
 
             if (!(confirmation === 'Yes')) {
                 this.clearHighlightData();

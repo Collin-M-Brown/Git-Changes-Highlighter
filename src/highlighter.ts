@@ -101,12 +101,10 @@ export class HighlightProcessor {
             }
 
 
-            // Retrieve highlight color from configuration with proper typing
             const highlightColor = vscode.workspace.getConfiguration('GitVision').get<string>('highlightColor') ?? 'rgba(34, 89, 178, 0.4)';
             const color: Color = new Color(highlightColor);
 
             try {
-                // Dispose and recreate decoration type to update color if necessary
                 this.decorationType.dispose();
                 this.decorationType = vscode.window.createTextEditorDecorationType({
                     backgroundColor: color.toString(),
@@ -120,10 +118,9 @@ export class HighlightProcessor {
 
             try {
                 const ranges = lines.map(line => {
-                    // Ensure the line number is within the document
                     if (line < 0 || line >= document.lineCount) {
                         ms.debugLog(`Invalid line number ${line} for file ${file}`);
-                        return new vscode.Range(0, 0, 0, 0); // Dummy range to prevent errors
+                        return new vscode.Range(0, 0, 0, 0);
                     }
                     const docLine = document.lineAt(line).range;
                     return new vscode.Range(docLine.start, docLine.end);
@@ -230,94 +227,66 @@ export class HighlightProcessor {
         }
         return left;
     }
-
-    private regenerateAllChangeBlocks() {
-        this.allChangeBlocks = [];
-        const files = Object.keys(this.highlights).sort((a, b) => a.localeCompare(b));
-        for (const file of files) {
-            const blocks = this.getHighlightBlocks(this.highlights[file]);
-            for (const block of blocks) {
-                this.allChangeBlocks.push({ file, block });
-            }
+    
+    private normalizePath(filePath: string): string {
+        // Need for windows otherwise the paths get stuck
+        if (process.platform === 'win32') {
+            return filePath.replace(/\\/g, '/').toLowerCase();
         }
-        this.allChangeBlocks.sort((a, b) => 
-            a.file.localeCompare(b.file) || a.block.start - b.block.start
-        );
+        return filePath;
     }
 
     private getCurrentPosition(): { file: string, line: number } | undefined {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
+            const file = this.normalizePath(editor.document.fileName);
+            ms.debugLog(`Current editor file (normalized): ${file}`);
             return {
-                file: editor.document.fileName,
+                file: file,
                 line: editor.selection.active.line
             };
         }
         return undefined;
     }
 
-    jumpToNextChange() {
-        if (this.allChangeBlocks.length === 0) {
-            this.regenerateAllChangeBlocks();
-        }
-
-        if (this.allChangeBlocks.length === 0) {
-            vscode.window.showInformationMessage('No highlighted changes available.');
-            return;
-        }
-
-        const currentPosition = this.getCurrentPosition();
-        if (!currentPosition) {
-            vscode.window.showInformationMessage('No active text editor.');
-            return;
-        }
-
-        let nextChangeIndex = this.allChangeBlocks.findIndex(change => 
-            change.file.localeCompare(currentPosition.file) > 0 || 
-            (change.file === currentPosition.file && change.block.start > currentPosition.line)
+    private regenerateAllChangeBlocks() {
+        this.allChangeBlocks = [];
+        const files = Object.keys(this.highlights).sort((a, b) => 
+            this.normalizePath(a).localeCompare(this.normalizePath(b))
         );
-
-        if (nextChangeIndex === -1) {
-            nextChangeIndex = 0;
+        
+        for (const file of files) {
+            const blocks = this.getHighlightBlocks(this.highlights[file]);
+            for (const block of blocks) {
+                this.allChangeBlocks.push({ 
+                    file: this.normalizePath(file), 
+                    block 
+                });
+            }
         }
-
-        const nextChange = this.allChangeBlocks[nextChangeIndex];
-        this.currentBlockIndex = nextChangeIndex;
-        this.openFileAndJumpToLine(nextChange.file, nextChange.block.start);
-    }
-
-    jumpToPrevChange() {
-        if (this.allChangeBlocks.length === 0) {
-            this.regenerateAllChangeBlocks();
-        }
-
-        if (this.allChangeBlocks.length === 0) {
-            vscode.window.showInformationMessage('No highlighted changes available.');
-            return;
-        }
-
-        const currentPosition = this.getCurrentPosition();
-        if (!currentPosition) {
-            vscode.window.showInformationMessage('No active text editor.');
-            return;
-        }
-
-        let prevChangeIndex = this.allChangeBlocks.findIndex(change => 
-            change.file.localeCompare(currentPosition.file) >= 0 && 
-            change.block.start >= currentPosition.line
+        
+        this.allChangeBlocks.sort((a, b) => 
+            a.file.localeCompare(b.file) || a.block.start - b.block.start
         );
-
-        if (prevChangeIndex <= 0) {
-            prevChangeIndex = this.allChangeBlocks.length - 1;
-        } else {
-            prevChangeIndex--;
-        }
-
-        const prevChange = this.allChangeBlocks[prevChangeIndex];
-        this.currentBlockIndex = prevChangeIndex;
-        this.openFileAndJumpToLine(prevChange.file, prevChange.block.start);
+        
+        ms.debugLog(`Regenerated change blocks: ${JSON.stringify(this.allChangeBlocks)}`);
     }
-
+    
+    private async openFileAndJumpToLine(file: string, line: number) {
+        try {
+            const document = await vscode.workspace.openTextDocument(file);
+            const editor = await vscode.window.showTextDocument(document);
+            const position = new vscode.Position(line, 0);
+            editor.selection = new vscode.Selection(position, position);
+            editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+            this.applyHighlights(document);
+            ms.debugLog(`Navigated to ${file} at line ${line}`);
+        } catch (error) {
+            console.error(`Failed to open file ${file} at line ${line}:`, error);
+            ms.debugLog(`Error opening file: ${error}`);
+        }
+    }
+    
     private getHighlightBlocks(highlights: number[]): { start: number, end: number }[] {
         if (!highlights || highlights.length === 0) return [];
 
@@ -341,18 +310,83 @@ export class HighlightProcessor {
         return blocks;
     }
 
-    private async openFileAndJumpToLine(file: string, line: number) {
-        try {
-            const document = await vscode.workspace.openTextDocument(file);
-            const editor = await vscode.window.showTextDocument(document);
-            const position = new vscode.Position(line, 0);
-            editor.selection = new vscode.Selection(position, position);
-            editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
-            this.applyHighlights(document);
-            ms.debugLog(`Navigated to ${file} at line ${line}`);
-        } catch (error) {
-            console.error(`Failed to open file ${file} at line ${line}:`, error);
-            // vscode.window.showErrorMessage(`Failed to navigate to ${file} at ${}.`);
+    jumpToNextChange() {
+        if (this.allChangeBlocks.length === 0) {
+            this.regenerateAllChangeBlocks();
         }
+
+        if (this.allChangeBlocks.length === 0) {
+            vscode.window.showInformationMessage('No highlighted changes available.');
+            return;
+        }
+
+        const currentPosition = this.getCurrentPosition();
+        if (!currentPosition) {
+            vscode.window.showInformationMessage('No active text editor.');
+            return;
+        }
+
+        ms.debugLog(`Current position for next: ${JSON.stringify(currentPosition)}`);
+        ms.debugLog(`Number of change blocks: ${this.allChangeBlocks.length}`);
+
+        let nextChangeIndex = this.allChangeBlocks.findIndex(change => 
+            change.file.localeCompare(currentPosition.file) > 0 || 
+            (change.file === currentPosition.file && change.block.start > currentPosition.line)
+        );
+
+        if (nextChangeIndex === -1) {
+            nextChangeIndex = 0;
+        }
+
+        const nextChange = this.allChangeBlocks[nextChangeIndex];
+        this.currentBlockIndex = nextChangeIndex;
+        
+        const originalFilePath = Object.keys(this.highlights).find(
+            file => this.normalizePath(file) === nextChange.file
+        ) || nextChange.file;
+        
+        this.openFileAndJumpToLine(originalFilePath, nextChange.block.start);
     }
+
+    jumpToPrevChange() {
+        if (this.allChangeBlocks.length === 0) {
+            this.regenerateAllChangeBlocks();
+        }
+
+        if (this.allChangeBlocks.length === 0) {
+            vscode.window.showInformationMessage('No highlighted changes available.');
+            return;
+        }
+
+        const currentPosition = this.getCurrentPosition();
+        if (!currentPosition) {
+            vscode.window.showInformationMessage('No active text editor.');
+            return;
+        }
+
+        ms.debugLog(`Current position for prev: ${JSON.stringify(currentPosition)}`);
+        ms.debugLog(`Number of change blocks: ${this.allChangeBlocks.length}`);
+
+        let prevChangeIndex = this.allChangeBlocks.findIndex(change => 
+            change.file.localeCompare(currentPosition.file) >= 0 && 
+            change.block.start >= currentPosition.line
+        );
+
+        if (prevChangeIndex <= 0) {
+            prevChangeIndex = this.allChangeBlocks.length - 1;
+        } else {
+            prevChangeIndex--;
+        }
+
+        const prevChange = this.allChangeBlocks[prevChangeIndex];
+        this.currentBlockIndex = prevChangeIndex;
+
+        // Use os specific path
+        const originalFilePath = Object.keys(this.highlights).find(
+            file => this.normalizePath(file) === prevChange.file
+        ) || prevChange.file;
+
+        this.openFileAndJumpToLine(originalFilePath, prevChange.block.start);
+    }
+
 }

@@ -38,7 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.executeCommand('setContext', 'GitVision.isGitRepository', isRepo);
     if (!isRepo)
         return;
-
+    
     //Initialize Command Processor
     if (!commandProcessor)
         commandProcessor = await CommandProcessor.create(context);

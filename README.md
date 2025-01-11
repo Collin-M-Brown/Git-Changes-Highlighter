@@ -80,6 +80,18 @@ Add filter buttons and scroll bar highlights
 * Add watchers for filter string, showAllCommits setting, and branch changes
 * remove some features that were dated.
 
+### 1.3.0
+
+* Add command to auto show uncommited changes
+* Add commands GitVision.jumpToNextChange GitVision.jumpToPrevChange for quick navigation between changes 
+* Added custom ignore list to file settings that users can configure. 
+"GitVision.ignorePatterns": [
+    "**/*.unity",
+    "**/*.meta",
+    "**/bin/**",
+    "**/obj/**"
+]
+
 ### TODO
 
 * Add feature to save last used commit watch list so people don't have to re-add the commits every time they reload.
@@ -87,6 +99,7 @@ Add filter buttons and scroll bar highlights
 ~~* Handle branch switch, auto reload commit repository an clear watch list.~~
 
 * Add color option for highlights that scales with date
+* Monitor file size to prevent searching from overly large files
 
 ## Related extensions (inspirations)
 
